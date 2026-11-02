@@ -1634,7 +1634,6 @@ setInterval(() => {
         const r = canvasEl.getBoundingClientRect ? canvasEl.getBoundingClientRect() : { width: GP.W, height: GP.H };
         // Pass no canvas: Matter 0.20 deep-copies options and would recurse into the DOM element.
         render = Render.create({
-          engine,
           options: {
             width: Math.max(1, Math.round(r.width || GP.W)), height: Math.max(1, Math.round(r.height || GP.H)),
             pixelRatio: (typeof window !== 'undefined' && window.devicePixelRatio) || 1,
@@ -1643,6 +1642,7 @@ setInterval(() => {
             hasBounds: true,
           },
         });
+        render.engine = engine;   // set afterwards: Render.create deep-copies its options
         render.canvas = canvasEl;
         render.context = canvasEl.getContext('2d');
         render.options.pixelRatio = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
@@ -1684,10 +1684,208 @@ setInterval(() => {
     get engine() { return engine; },
     get modulesUsed() {
       return Object.keys(MODULE_INFO).filter(n => used.has(n) || n === 'Render')
-        .map(name => ({ name, what: MODULE_INFO[name] }));
+        .map(name => ({ name, what: MODULE_INFO[name] }))
+        .concat((GP.FX && GP.FX.modules) || []);
     },
     _presets: PRESETS,
   };
+})();
+// ============================================================
+// GP.FX: two note effects that are REAL Matter.js bodies in the same engine
+//  1. Steam: light circles pushed up by a buoyancy force each update. They bump into
+//     each other, into falling balls and into machine ramps (see them in X-ray).
+//  2. Strings: a chain of small bodies linked by spring Constraints, pinned at both ends
+//     above the key. A note plucks it: low notes swing slowly and ring long, high notes fast and short.
+// ============================================================
+// CONFIG ADDITIONS:
+CONFIG.fx = {
+  steamPerNote: 6,        // steam bodies per note (fewer with reduced motion)
+  steamRadius: 9,         // physical radius of a steam puff
+  steamLift: 1.9,         // buoyancy in multiples of gravity (1 = floats, >1 rises)
+  steamAirFriction: 0.07, // air drag on steam: higher = slower, softer rise
+  steamLife: 2.0,         // seconds a puff lives
+  steamMax: 140,          // cap on live steam bodies
+  stringSegments: 9,      // bodies per string
+  stringLength: 170,      // px, from just above the key upward
+  stringStiffLow: 0.05,   // spring stiffness for C3 (slow swing)
+  stringStiffHigh: 0.5,   // spring stiffness for C6 (fast swing)
+  stringDampLow: 0.006,   // air friction for low strings (ring long)
+  stringDampHigh: 0.045,  // air friction for high strings (die fast)
+  stringPluck: 7,         // px per step sideways kick at full velocity
+  stringLife: 3.0,        // seconds before an untouched string is removed
+  stringMax: 14,          // most strings at once
+};
+
+(() => {
+  'use strict';
+  const FX = CONFIG.fx;
+  const CAT_STEAM = 0x0400;
+  let engine = null;
+  const steam = [];       // {body, born, life, color}
+  const strings = new Map(); // keyMidi -> {bodies, pins, links, color, plucked, top, bottom}
+  const M = () => Matter;
+  const now = () => GP.now();
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  function keyCats() {
+    let c = 0;
+    for (const k of GP.keys) c |= k.body.collisionFilter.category;
+    return c;
+  }
+
+  function ensure() {
+    if (engine || !GP.Physics || !GP.Physics.engine) return !!engine;
+    engine = GP.Physics.engine;
+    const { Events, Body } = M();
+    // Buoyancy for steam and "no gravity" for strings, applied before every engine update
+    Events.on(engine, 'beforeUpdate', () => {
+      const g = engine.gravity, gs = g.scale * g.y;
+      for (const s of steam) {
+        const b = s.body, m = b.mass;
+        const age = now() - s.born;
+        Body.applyForce(b, b.position, { x: Math.sin(age * 3 + b.id) * m * gs * 0.25, y: -m * gs * FX.steamLift });
+      }
+      strings.forEach(st => { for (const b of st.bodies) Body.applyForce(b, b.position, { x: 0, y: -b.mass * gs }); });
+      // let balls and machine parts collide with steam (the other side of the collision filter)
+      for (const ball of GP.balls) ball.body.collisionFilter.mask |= CAT_STEAM;
+      for (const it of GP.machine) if (it.body && it.body.collisionFilter.mask) it.body.collisionFilter.mask |= CAT_STEAM;
+    });
+    // Lifetimes, after each update
+    Events.on(engine, 'afterUpdate', cleanup);
+    GP.FX.modules = [
+      { name: 'Events', what: 'beforeUpdate applies buoyancy to steam and cancels gravity on the strings each step.' },
+      { name: 'Composites', what: 'Composites.chain links each string of bodies with spring Constraints.' },
+    ];
+    return true;
+  }
+
+  function cleanup() {
+    const { Composite } = M();
+    const t = now();
+    for (let i = steam.length - 1; i >= 0; i--) {
+      const s = steam[i];
+      if (t - s.born > s.life || s.body.position.y < -40) { Composite.remove(engine.world, s.body); steam.splice(i, 1); }
+    }
+    strings.forEach((st, k) => {
+      if (t - st.plucked > FX.stringLife) { Composite.remove(engine.world, st.comp); strings.delete(k); }
+    });
+  }
+
+  // ---------- 1. steam ----------
+  function spawnSteam(key, color, vel) {
+    const { Bodies, Body, Composite } = M();
+    const n = GP.reducedMotion ? 2 : FX.steamPerNote;
+    const mask = 0xFFFFFFFF & ~keyCats();
+    const topY = key.y - key.h / 2 - FX.steamRadius - 3;
+    for (let i = 0; i < n; i++) {
+      if (steam.length >= FX.steamMax) { Composite.remove(engine.world, steam[0].body); steam.shift(); }
+      const b = Bodies.circle(key.x + (Math.random() - 0.5) * key.w * 0.7, topY - Math.random() * 6, FX.steamRadius * (0.8 + Math.random() * 0.4), {
+        frictionAir: FX.steamAirFriction, density: 0.0003, restitution: 0.4, friction: 0,
+        collisionFilter: { group: 0, category: CAT_STEAM, mask }, label: 'steam',
+      });
+      Body.setVelocity(b, { x: (Math.random() - 0.5) * 2, y: -(2 + 4 * vel) - Math.random() * 2 });
+      Composite.add(engine.world, b);
+      steam.push({ body: b, born: now() + i * 0.02, life: FX.steamLife * (0.8 + Math.random() * 0.4), color });
+    }
+  }
+
+  // ---------- 2. strings ----------
+  function makeString(key, color) {
+    const { Composites, Composite, Bodies, Constraint } = M();
+    const t = (key.midi - CONFIG.keys.lowMidi) / (CONFIG.keys.highMidi - CONFIG.keys.lowMidi);
+    const N = FX.stringSegments;
+    const bottom = key.restY - key.h / 2 - 14 - (key.isBlack ? 0 : 0);
+    const top = bottom - FX.stringLength;
+    const gap = FX.stringLength / (N + 1);
+    const stiff = lerp(FX.stringStiffLow, FX.stringStiffHigh, t);
+    const damp = lerp(FX.stringDampLow, FX.stringDampHigh, t);
+    const comp = Composites.stack(key.x, top + gap, 1, N, 0, gap, (x, y) => Bodies.circle(x, y, 2.5, {
+      frictionAir: damp, density: 0.002, collisionFilter: { group: 0, category: 0, mask: 0 }, label: 'string',
+    }));
+    // springs between neighbours, slightly shorter than the gap so the string is under tension
+    Composites.chain(comp, 0, 0, 0, 0, { stiffness: stiff, damping: 0.02, length: gap * 0.92, render: { type: 'line' } });
+    const bodies = comp.bodies;
+    Composite.add(comp, Constraint.create({ pointA: { x: key.x, y: top }, bodyB: bodies[0], length: gap * 0.92, stiffness: stiff }));
+    Composite.add(comp, Constraint.create({ pointA: { x: key.x, y: bottom }, bodyB: bodies[N - 1], length: gap * 0.92, stiffness: stiff }));
+    Composite.add(engine.world, comp);
+    return { comp, bodies, color, plucked: 0, top, bottom, x: key.x, amp: 0 };
+  }
+
+  function pluck(key, color, vel) {
+    const { Body, Composite } = M();
+    let st = strings.get(key.midi);
+    if (!st) {
+      if (strings.size >= FX.stringMax) { // drop the oldest
+        let oldK = null, oldT = Infinity;
+        strings.forEach((s, k) => { if (s.plucked < oldT) { oldT = s.plucked; oldK = k; } });
+        if (oldK != null) { Composite.remove(engine.world, strings.get(oldK).comp); strings.delete(oldK); }
+      }
+      st = makeString(key, color);
+      strings.set(key.midi, st);
+    }
+    st.color = color; st.plucked = now();
+    const N = st.bodies.length, dir = Math.random() < 0.5 ? -1 : 1;
+    st.bodies.forEach((b, i) => {
+      const shape = Math.sin(Math.PI * (i + 1) / (N + 1)); // first harmonic: biggest in the middle
+      Body.setVelocity(b, { x: b.velocity.x + dir * FX.stringPluck * (0.35 + 0.65 * vel) * shape, y: b.velocity.y });
+    });
+  }
+
+  function onNote(n) {
+    if (!ensure()) return;
+    const key = GP.keyByMidi(n.keyMidi != null ? n.keyMidi : n.midi);
+    if (!key) return;
+    const color = GP.noteColor(n.midi), v = n.velocity == null ? 0.7 : n.velocity;
+    pluck(key, color, v);
+    spawnSteam(key, color, v);
+  }
+
+  // ---------- drawing (called by the renderer, world coordinates) ----------
+  const sprites = new Map();
+  function steamSprite(color) {
+    let s = sprites.get(color);
+    if (s) return s;
+    s = document.createElement('canvas'); s.width = s.height = 64;
+    const g = s.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,255,0.85)'); gr.addColorStop(0.35, color); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalAlpha = 0.75; g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    sprites.set(color, s);
+    return s;
+  }
+
+  function draw(ctx) {
+    const t = now();
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // strings: a glowing curve through the pins and every body
+    strings.forEach(st => {
+      const age = t - st.plucked;
+      const a = Math.max(0, 1 - age / FX.stringLife);
+      if (a <= 0) return;
+      ctx.beginPath();
+      ctx.moveTo(st.x, st.top);
+      for (const b of st.bodies) ctx.lineTo(b.position.x, b.position.y);
+      ctx.lineTo(st.x, st.bottom);
+      ctx.strokeStyle = st.color; ctx.globalAlpha = 0.18 * a; ctx.lineWidth = 7; ctx.stroke();
+      ctx.globalAlpha = 0.85 * a; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.globalAlpha = 0.6 * a; ctx.fillStyle = st.color;
+      ctx.fillRect(st.x - 4, st.top - 1.5, 8, 3); ctx.fillRect(st.x - 4, st.bottom - 1.5, 8, 3);
+    });
+    // steam: soft sprites that grow and fade as they rise
+    for (const s of steam) {
+      const age = t - s.born;
+      if (age < 0) continue;
+      const k = Math.min(1, age / s.life);
+      const r = s.body.circleRadius * (1.6 + 3.2 * k);
+      ctx.globalAlpha = Math.min(1, age * 6) * (1 - k) * (1 - k) * 0.85;
+      ctx.drawImage(steamSprite(s.color), s.body.position.x - r, s.body.position.y - r, r * 2, r * 2);
+    }
+    ctx.restore();
+  }
+
+  GP.FX = { draw, modules: [], get steamCount() { return steam.length; }, get stringCount() { return strings.size; } };
+  GP.on('note', onNote);
 })();
 // ============================================================
 // RENDER: GP.Renderer — cinematic Canvas 2D view of the world
@@ -1859,8 +2057,6 @@ setInterval(() => {
     labels.push({ x, y: y - 18, text: names ? noteName(n.midi) : '\u2726', color, t0: now, big: names });
     if (labels.length > 30) labels.shift();
     staffShift = Math.min(staffShift + 30, 90);
-    { const k = GP.keyByMidi(n.keyMidi != null ? n.keyMidi : n.midi);
-      spawnSteam(k ? k.x : x, k ? k.y - k.h / 2 : y, k ? k.w : 30, color, n.velocity == null ? 0.7 : n.velocity); }
     // a few sparks at contact
     const sparks = GP.reducedMotion ? 0 : 5;
     for (let i = 0; i < sparks; i++) {
@@ -2700,7 +2896,7 @@ setInterval(() => {
       drawKeys(now);
       drawTheory(now);
       drawBalls();
-      drawSteam(now);
+      if (GP.FX) GP.FX.draw(ctx);
       drawEffects(now, dt);
       if (L.staff) drawStaff(now);
       drawHUD();
