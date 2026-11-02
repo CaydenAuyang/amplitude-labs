@@ -2,7 +2,9 @@
 
 Our group's Matter.js project for the ADV Computer Coding Hack-a-Thon (Mr. Lake, D block).
 
-**Play it:** https://YOUR-GITHUB-USERNAME.github.io/REPO-NAME/ (turn on GitHub Pages first, see below)
+**Play it:** https://caydenauyang.github.io/hackathon-physics/
+
+**Code:** https://github.com/CaydenAuyang/hackathon-physics
 
 ## Team
 
