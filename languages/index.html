@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lingo Drop · Amplitude Labs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Host+Grotesk:wght@300;400&family=Martian+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #070A12; --text: #E8EDF6; --muted: #8A94A7;
@@ -162,6 +162,70 @@
   #layersPop.show { opacity: 1; transform: none; pointer-events: auto; }
   .err { color: #FDA4AF; font-size: 12px; min-height: 1.2em; margin: 6px 0 0; }
   @media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; animation: none !important; } }
+
+  /* ---------- Editorial restyle to match the Amplitude Labs hub (ink, paper, hairlines, one accent) ---------- */
+  :root {
+    --bg: #0d0d0c; --text: #f4f3ef; --muted: rgba(244,243,239,.55);
+    --glass: transparent; --line: rgba(244,243,239,.14);
+    --accent: #ff5a36 !important; --accent2: #f4f3ef !important;
+    --mono: 'Martian Mono', ui-monospace, monospace;
+  }
+  body { font-family: 'Host Grotesk', 'Helvetica Neue', Arial, sans-serif; font-weight: 300; background: #0d0d0c; background-image: none; font-size: 15px; }
+  .topbar, #sidebar, .sec, #hudB, #layersPop, .overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  .topbar { background: #0d0d0c; padding: 0 20px; }
+  .back { font-weight: 400; padding: 6px 0; }
+  .back:hover { background: none; }
+  .labname { font-weight: 400; font-size: 19px; letter-spacing: -.02em; }
+  .logo { display: none; }
+  .pill { font-family: var(--mono); font-weight: 400; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: none; border: 1px solid var(--line); }
+  .tbtn, .btn { border-radius: 999px; background: none; font-family: var(--mono); font-weight: 400; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; }
+  .tbtn:hover, .tbtn.on, .btn:hover { background: #f4f3ef; color: #0d0d0c; border-color: #f4f3ef; }
+  .tbtn:hover kbd, .tbtn.on kbd { color: #0d0d0c; border-color: rgba(13,13,12,.3); }
+  .btn.primary { background: #f4f3ef; color: #0d0d0c; border-color: #f4f3ef; }
+  .btn.primary:hover, .intro .btn.primary:hover { filter: none; background: #ff5a36; border-color: #ff5a36; }
+  .intro .btn.primary { background: #f4f3ef; }
+  kbd { background: none; border-radius: 3px; }
+  #sidebar { background: #0d0d0c; padding: 0; gap: 0; }
+  .sec { background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+  .sec-h { font-family: var(--mono); font-weight: 400; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; border-radius: 0; padding: 16px 20px; }
+  .sec-h:hover { background: none; }
+  .sec-b { padding: 0 20px 18px; }
+  .scen { gap: 0; }
+  .scen button { border-radius: 0; background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 0; }
+  .scen button:hover, .scen button.on { background: none; color: #ff5a36; border-color: var(--line); }
+  .scen .k { border-radius: 0; background: none; border: 1px solid var(--line); }
+  .scen .t { font-weight: 400; font-size: 15px; }
+  .ctl-top .v { color: var(--text); }
+  input[type=range]::-webkit-slider-runnable-track { height: 1px; border-radius: 0; background: linear-gradient(90deg, #f4f3ef var(--p, 50%), rgba(244,243,239,.2) var(--p, 50%)); }
+  input[type=range]::-moz-range-track { height: 1px; border-radius: 0; background: linear-gradient(90deg, #f4f3ef var(--p, 50%), rgba(244,243,239,.2) var(--p, 50%)); }
+  input[type=range]::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: -5.5px; background: #f4f3ef; box-shadow: none; }
+  input[type=range]::-moz-range-thumb { width: 12px; height: 12px; background: #f4f3ef; box-shadow: none; }
+  .seg { border-radius: 999px; background: none; }
+  .seg button { border-radius: 999px; font-size: 10.5px; }
+  .seg button.on { background: #f4f3ef; color: #0d0d0c; }
+  .tog .sw { border-radius: 999px; background: rgba(244,243,239,.16); }
+  .tog[aria-checked=true] .sw { background: #ff5a36; }
+  .tog .lbl { font-size: 14px; }
+  .sub { font-family: var(--mono); font-weight: 400; font-size: 10px; }
+  textarea { border-radius: 0; background: none; }
+  .card { border-radius: 0; background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 0; }
+  .card p, ul.mods li { color: var(--text); }
+  ul.mods code { color: #ff5a36; }
+  .binrow .bar, .binrow .bar i { border-radius: 0; height: 2px; }
+  #caption { text-shadow: none; font-weight: 400; }
+  #hudB { background: #0d0d0c; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; }
+  #toast { background: #0d0d0c; border-radius: 0; border-color: #ff5a36; }
+  #toast.ok { border-color: #f4f3ef; }
+  .overlay { background: rgba(13,13,12,.72); }
+  .modal, .modal.intro { background: #0d0d0c; border: 1px solid var(--line); border-radius: 0; box-shadow: none; padding: 36px; }
+  .modal h2 { font-weight: 300; font-size: 64px; letter-spacing: -.045em; line-height: .95; margin: 14px 0 14px; }
+  .modal .eyebrow, .modal.intro .eyebrow { color: var(--muted); font-size: 10.5px; letter-spacing: .1em; }
+  .modal p.lead { color: var(--text); font-size: 18px; }
+  .modal ul.try { counter-reset: s; }
+  .modal ul.try li { counter-increment: s; padding: 10px 0 10px 36px; color: var(--text); border-top: 1px solid var(--line); }
+  .modal ul.try li::before { content: counter(s, decimal-leading-zero); background: none; box-shadow: none; border-radius: 0; width: auto; height: auto; top: 13px; left: 0; font-family: var(--mono); font-size: 10.5px; color: #ff5a36; }
+  .sum-stats div { background: none; border-radius: 0; }
+  #layersPop { background: #0d0d0c; border-radius: 0; box-shadow: none; }
 </style>
 </head>
 <body>
@@ -188,11 +252,10 @@
       <div class="modal intro" role="dialog" aria-labelledby="introTitle">
         <div class="eyebrow">Amplitude Labs · World Languages</div>
         <h2 id="introTitle">Lingo Drop</h2>
-        <p class="lead">Spanish and French cards tumble into a tray. Fling each one into the right bin before the pile overflows.</p>
+        <p class="lead">Spanish or French word cards fall into the middle. Sort each one into the right bin before the pile gets too high.</p>
         <ul class="try">
-          <li><b>Fling a card</b> into the matching bin. It speaks as you pick it up.</li>
-          <li><b>Switch the scenario</b> to themes or present-tense verbs, then survive a 60-second round.</li>
-          <li><b>Press E</b> for Heat, so the class can see which bin is the hard one.</li>
+          <li>Drag a card into a bin, or fling it. You'll hear the word as you pick it up.</li>
+          <li>Pick a scenario on the right: gender, themes or verbs, in Spanish or French.</li>
         </ul>
         <button class="btn primary" id="btnStart" aria-label="Start the round" style="width:100%">Start</button>
       </div>
@@ -241,7 +304,7 @@
         </div>
       </div>
     </section>
-    <section class="sec" data-sec="controls">
+    <section class="sec closed" data-sec="controls">
       <button class="sec-h" aria-label="Toggle Controls section">Controls <span class="chev">▼</span></button>
       <div class="sec-b">
         <div class="ctl">
@@ -274,11 +337,11 @@
         </div>
       </div>
     </section>
-    <section class="sec" data-sec="layers">
+    <section class="sec closed" data-sec="layers">
       <button class="sec-h" aria-label="Toggle Layers section">Layers <span class="chev">▼</span></button>
       <div class="sec-b" id="layerList"></div>
     </section>
-    <section class="sec" data-sec="live">
+    <section class="sec closed" data-sec="live">
       <button class="sec-h" aria-label="Toggle Live data section">Live data <span class="chev">▼</span></button>
       <div class="sec-b">
         <div class="kv">
@@ -292,7 +355,7 @@
         <div id="lvBins" class="small muted">Start a round to fill the bins.</div>
       </div>
     </section>
-    <section class="sec" data-sec="lesson">
+    <section class="sec closed" data-sec="lesson">
       <button class="sec-h" aria-label="Toggle Lesson section">Lesson <span class="chev">▼</span></button>
       <div class="sec-b" id="lessonBox"></div>
     </section>
@@ -967,15 +1030,9 @@ function traceRound(x, y, w, h, r) {
 }
 function drawBackground(t) {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.fillStyle = '#070A12';
+  ctx.fillStyle = '#0d0d0c';
   ctx.fillRect(0, 0, W, H);
-  const g = ctx.createRadialGradient(W * 0.34, H * 0.4, 20, W * 0.34, H * 0.4, Math.max(W, H) * 0.62);
-  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#F97316';
-  const rgb = hexToRgb(accent);
-  g.addColorStop(0, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0.20)');
-  g.addColorStop(1, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
+  const accent = '#f4f3ef';
   const drift = reduceMotion ? 0 : t * 0.00004;
   for (let i = 0; i < glyphs.length; i++) {
     const gl = glyphs[i];
@@ -984,9 +1041,9 @@ function drawBackground(t) {
     let y = ((gl.y + Math.sin(t * 0.00015 + i) * (reduceMotion ? 0 : 0.01)) % 1) * H;
     if (x < 0) x += W;
     if (y < 0) y += H;
-    ctx.globalAlpha = gl.a;
+    ctx.globalAlpha = gl.a * 0.5;
     ctx.fillStyle = accent;
-    ctx.font = '600 ' + gl.s + 'px Inter, sans-serif';
+    ctx.font = '300 ' + gl.s + 'px "Host Grotesk", sans-serif';
     ctx.fillText(gl.ch, x, y);
   }
   ctx.globalAlpha = 1;
@@ -1003,11 +1060,8 @@ function drawBins() {
       heat = a < 0.5 ? lerpHex('#F43F5E', '#FACC15', a / 0.5) : lerpHex('#FACC15', '#10B981', (a - 0.5) / 0.5);
     }
     ctx.save();
-    traceRound(x, y, w, h, 16);
-    const fill = ctx.createLinearGradient(x, y, x, y + h);
-    fill.addColorStop(0, 'rgba(255,255,255,0.07)');
-    fill.addColorStop(1, 'rgba(255,255,255,0.02)');
-    ctx.fillStyle = fill;
+    traceRound(x, y, w, h, 2);
+    ctx.fillStyle = 'rgba(244,243,239,0.025)';
     ctx.fill();
     if (heat) {
       ctx.fillStyle = heat;
@@ -1016,34 +1070,32 @@ function drawBins() {
       ctx.globalAlpha = 1;
     }
     if (bin.flash > 0) {
-      ctx.fillStyle = 'rgba(244,63,94,' + (0.28 * bin.flash) + ')';
+      ctx.fillStyle = 'rgba(255,90,54,' + (0.18 * bin.flash) + ')';
       ctx.fill();
     }
     if (bin.glow > 0) {
       ctx.save();
-      ctx.shadowColor = lang === 'es' ? '#FACC15' : '#93C5FD';
-      ctx.shadowBlur = 24 * bin.glow;
-      ctx.strokeStyle = lang === 'es' ? 'rgba(250,204,21,' + bin.glow + ')' : 'rgba(147,197,253,' + bin.glow + ')';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(244,243,239,' + bin.glow + ')';
+      ctx.lineWidth = 2;
       ctx.stroke();
       ctx.restore();
     }
-    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(244,243,239,0.16)';
+    ctx.lineWidth = 1;
     ctx.stroke();
     const lx = bin.side === 'left' ? x + w * 0.36 : x + w * 0.64;
-    ctx.fillStyle = '#E8EDF6';
+    ctx.fillStyle = '#f4f3ef';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const labelSize = bin.label.length > 16 ? 15 : 20;
-    ctx.font = '700 ' + labelSize + 'px Inter, sans-serif';
+    const labelSize = bin.label.length > 16 ? 22 : bin.label.length > 6 ? 34 : 64;
+    ctx.font = '300 ' + labelSize + 'px "Host Grotesk", sans-serif';
     const lines = wrap(bin.label, w * 0.7);
     const block = lines.length * (labelSize + 2);
     lines.forEach((line, i) => ctx.fillText(line, lx, y + h * 0.42 - block / 2 + i * (labelSize + 2)));
     if (bin.sub) {
-      ctx.font = '500 13px Inter, sans-serif';
-      ctx.fillStyle = '#8A94A7';
-      ctx.fillText(bin.sub, lx, y + h * 0.42 + block / 2 + 8);
+      ctx.font = '400 11px "Martian Mono", monospace';
+      ctx.fillStyle = 'rgba(244,243,239,0.55)';
+      ctx.fillText(String(bin.sub).toUpperCase(), lx, y + h * 0.42 + block / 2 + 14);
     }
     ctx.restore();
   });
@@ -1068,14 +1120,14 @@ function drawDanger() {
   ctx.save();
   ctx.beginPath();
   ctx.setLineDash([10, 8]);
-  ctx.strokeStyle = hot ? 'rgba(244,63,94,0.9)' : 'rgba(255,255,255,0.28)';
+  ctx.strokeStyle = hot ? 'rgba(255,90,54,0.9)' : 'rgba(244,243,239,0.22)';
   ctx.lineWidth = hot ? 2.5 : 1.5;
   ctx.moveTo(layout.tray.minX, y);
   ctx.lineTo(layout.tray.maxX, y);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.font = '600 12px Inter, sans-serif';
-  ctx.fillStyle = hot ? '#FDA4AF' : 'rgba(232,237,246,0.55)';
+  ctx.font = '400 11px "Martian Mono", monospace';
+  ctx.fillStyle = hot ? '#ff5a36' : 'rgba(244,243,239,0.55)';
   ctx.textAlign = 'left';
   ctx.fillText(hot ? 'OVERFLOW' : 'DANGER', layout.tray.minX + 8, y - 8);
   ctx.restore();
@@ -1091,53 +1143,37 @@ function drawCards() {
     ctx.shadowColor = 'rgba(0,0,0,0.45)';
     ctx.shadowBlur = reduceMotion ? 0 : 16;
     ctx.shadowOffsetY = 8;
-    traceRound(-L.w / 2, -L.h / 2, L.w, L.h, 14);
-    const g = ctx.createLinearGradient(0, -L.h / 2, 0, L.h / 2);
-    if (lang === 'es') {
-      g.addColorStop(0, 'rgba(253,186,116,0.95)');
-      g.addColorStop(0.45, 'rgba(249,115,22,0.92)');
-      g.addColorStop(1, 'rgba(124,45,18,0.95)');
-    } else {
-      g.addColorStop(0, 'rgba(191,219,254,0.95)');
-      g.addColorStop(0.5, 'rgba(59,130,246,0.92)');
-      g.addColorStop(1, 'rgba(136,19,55,0.9)');
-    }
-    ctx.fillStyle = g;
+    traceRound(-L.w / 2, -L.h / 2, L.w, L.h, 6);
+    ctx.fillStyle = '#f4f3ef';
     ctx.fill();
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
-    traceRound(-L.w / 2, -L.h / 2, L.w, L.h * 0.45, 14);
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.fill();
+    ctx.fillStyle = '#ff5a36';
+    ctx.fillRect(-L.w / 2 + 14, -L.h / 2 + 12, 14, 2);
     ctx.restore();
     ctx.save();
     ctx.translate(b.position.x, b.position.y);
     ctx.rotate(b.angle);
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-    ctx.lineWidth = 1.5;
-    traceRound(-L.w / 2, -L.h / 2, L.w, L.h, 14);
-    ctx.stroke();
-    ctx.fillStyle = '#1C120C';
-    if (lang === 'fr') ctx.fillStyle = '#0B1220';
+    ctx.fillStyle = '#0d0d0c';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     let size = 26;
-    ctx.font = '700 ' + size + 'px Inter, sans-serif';
+    ctx.font = '400 ' + size + 'px "Host Grotesk", sans-serif';
     while (ctx.measureText(L.text).width > L.w - 24 && size > 14) {
       size -= 1;
-      ctx.font = '700 ' + size + 'px Inter, sans-serif';
+      ctx.font = '400 ' + size + 'px "Host Grotesk", sans-serif';
     }
     const hasSub = !!L.sub;
     const showHint = layers.hints && L.hint && !hasSub;
     const wordY = hasSub ? -16 : showHint ? -12 : 0;
     ctx.fillText(L.text, 0, wordY);
-    ctx.fillStyle = lang === 'fr' ? 'rgba(11,18,32,0.78)' : 'rgba(28,18,12,0.75)';
-    ctx.font = '600 13px Inter, sans-serif';
+    ctx.fillStyle = 'rgba(13,13,12,0.6)';
+    ctx.font = '400 13px "Host Grotesk", sans-serif';
     if (hasSub) ctx.fillText(L.sub, 0, 16);
     else if (showHint) ctx.fillText(L.hint, 0, 16);
     if (L.tricky) {
-      ctx.font = '700 10px Inter, sans-serif';
-      ctx.fillStyle = '#7C2D12';
+      ctx.font = '400 9px "Martian Mono", monospace';
+      ctx.fillStyle = '#ff5a36';
       ctx.fillText('TRICKY', 0, L.h / 2 - 12);
     }
     ctx.restore();
@@ -1427,6 +1463,7 @@ function updateLive() {
 
 function loadScenario(index, live) {
   scenarioIndex = index;
+  $('listBox').hidden = SCENARIOS[index].mode !== 'list';
   const content = currentContent();
   $('listErr').textContent = content.error || '';
   applyAccent(content.lang);
