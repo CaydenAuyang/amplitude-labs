@@ -434,7 +434,7 @@ table.ratios th:first-child { text-align: left; }
     <div class="help-grid">
       <h5>Play</h5>
       <div class="hk"><span>Drop C … C (white keys)</span><span><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd></span></div>
-      <div class="hk"><span>Drop sharps (black keys)</span><span><kbd>W</kbd><kbd>E</kbd><kbd>T</kbd><kbd>Y</kbd><kbd>U</kbd></span></div>
+      <div class="hk"><span>Play sharps (black keys)</span><span><kbd>W</kbd><kbd>E</kbd><kbd>T</kbd><kbd>Y</kbd><kbd>U</kbd></span></div>
       <div class="hk"><span>Octave down / up</span><span><kbd>Z</kbd><kbd>X</kbd></span></div>
       <div class="hk"><span>Strike a key / drop a chord</span><span><kbd>Click</kbd></span></div>
       <div class="hk"><span>Drag a falling ball</span><span><kbd>Drag</kbd></span></div>
@@ -511,6 +511,7 @@ const GP = {
     dropHeight: CONFIG.drop.defaultHeight,
     octaveShift: 0,               // computer keyboard octave offset (-1, 0, +1)
     scale: { type: CONFIG.scale.default, root: CONFIG.scale.root },
+    keyMode: 'instant',           // 'instant' = keys sound at once; 'drop' = keys drop a ball (shows fall time)
     chordQuality: 'major',        // 'major' | 'minor' | 'diminished' | 'augmented'
     layers: { names: true, theory: true, chord: false, spectrum: true, staff: true, xray: false },
     present: false,
@@ -1588,7 +1589,7 @@ setInterval(() => {
     ptr.kind = 'key';
     if (GP.state.layers.chord && GP.Theory && GP.Theory.chord) {
       const ch = GP.Theory.chord(key.midi, GP.state.chordQuality);
-      ch.notes.forEach(m => dropBall(m));
+      ch.notes.forEach(m => (GP.state.keyMode === 'drop' ? dropBall(m) : strikeKey(m, 0.75)));
       GP.lastChord = { name: ch.name, notes: ch.noteNames, time: now() };
       GP.emit('chord', { name: ch.name, notes: ch.noteNames, rootMidi: key.midi });
     } else {
@@ -1805,6 +1806,48 @@ setInterval(() => {
     p.alive = true; p.x = x; p.y = y; p.vx = vx; p.vy = vy; p.life = life; p.max = life; p.size = size; p.color = color;
   }
 
+  // ---------- steam: soft glowing vapour that rises from a key after it sounds ----------
+  const steam = [];
+  const steamSprites = new Map();
+  function steamSprite(color) {
+    let s = steamSprites.get(color);
+    if (s) return s;
+    s = document.createElement('canvas'); s.width = s.height = 64;
+    const g = s.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.35, color); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalAlpha = 0.55; g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    steamSprites.set(color, s);
+    return s;
+  }
+  function spawnSteam(x, y, w, color, v) {
+    const n = GP.reducedMotion ? 3 : 9;
+    const t = GP.now();
+    for (let i = 0; i < n; i++) {
+      steam.push({ x: x + (Math.random() - 0.5) * w * 0.8, y: y - 4, vy: -(70 + Math.random() * 90) * (0.6 + 0.6 * v),
+        r: 9 + Math.random() * 9, grow: 26 + Math.random() * 22, ph: Math.random() * TAU,
+        t0: t + 0.04 + i * 0.03, life: 1.3 + Math.random() * 0.7, color });
+    }
+    if (steam.length > 260) steam.splice(0, steam.length - 260);
+  }
+  function drawSteam(now) {
+    if (!steam.length) return;
+    const c = ctx;
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (let i = steam.length - 1; i >= 0; i--) {
+      const p = steam[i];
+      const age = now - p.t0;
+      if (age < 0) continue;              // the note sounds first; the vapour follows a beat later
+      const k = age / p.life;
+      if (k >= 1) { steam.splice(i, 1); continue; }
+      const y = p.y + p.vy * age * (1 - 0.35 * k);
+      const x = p.x + Math.sin(p.ph + age * 2.4) * 14 * k;
+      const r = p.r + p.grow * age;
+      c.globalAlpha = Math.min(1, age * 6) * (1 - k) * (1 - k) * 0.8;
+      c.drawImage(steamSprite(p.color), x - r, y - r, r * 2, r * 2);
+    }
+    c.restore();
+  }
+
   function onNote(n) {
     const now = GP.now();
     const color = colorOf(n.midi);
@@ -1816,6 +1859,8 @@ setInterval(() => {
     labels.push({ x, y: y - 18, text: names ? noteName(n.midi) : '\u2726', color, t0: now, big: names });
     if (labels.length > 30) labels.shift();
     staffShift = Math.min(staffShift + 30, 90);
+    { const k = GP.keyByMidi(n.keyMidi != null ? n.keyMidi : n.midi);
+      spawnSteam(k ? k.x : x, k ? k.y - k.h / 2 : y, k ? k.w : 30, color, n.velocity == null ? 0.7 : n.velocity); }
     // a few sparks at contact
     const sparks = GP.reducedMotion ? 0 : 5;
     for (let i = 0; i < sparks; i++) {
@@ -2655,6 +2700,7 @@ setInterval(() => {
       drawKeys(now);
       drawTheory(now);
       drawBalls();
+      drawSteam(now);
       drawEffects(now, dt);
       if (L.staff) drawStaff(now);
       drawHUD();
@@ -2873,6 +2919,22 @@ setInterval(() => {
     }
     safe('drop', () => GP.Physics.dropBall(midi));
   }
+  // Keyboard play: sound now (strike the key), or drop a ball when "Drop ball" is chosen.
+  function playNote(midi) {
+    if (S.keyMode === 'drop') return dropNote(midi);
+    if (!GP.Physics || !GP.Physics.strikeKey) return;
+    const snapM = m => (T() && T().snap ? T().snap(m) : m);
+    if (S.layers.chord && T() && T().chord) {
+      const ch = safe('chord', () => T().chord(midi, S.chordQuality));
+      if (ch && ch.notes) {
+        ch.notes.filter(m => m >= CONFIG.keys.lowMidi && m <= CONFIG.keys.highMidi).forEach(m => safe('strike', () => GP.Physics.strikeKey(m, 0.75)));
+        GP.lastChord = { name: ch.name, notes: ch.noteNames || ch.notes.map(noteName), time: GP.now() };
+        GP.emit('chord', { name: ch.name, notes: GP.lastChord.notes, rootMidi: midi });
+        return;
+      }
+    }
+    safe('strike', () => GP.Physics.strikeKey(snapM(midi), 0.8));
+  }
 
   // ---------- sidebar ----------
   const ICONS = {
@@ -2943,7 +3005,10 @@ setInterval(() => {
         el('button', { type: 'button', class: 'btn', 'aria-label': 'Set pentatonic scale', text: 'Pentatonic', onclick: () => setScale('pentatonic', S.scale.root) }),
         el('button', { type: 'button', class: 'btn', 'aria-label': 'Turn scale lock off', text: 'Scale off', onclick: () => setScale('off', S.scale.root) })));
     const playPanel = el('div', { class: 'sub-panel' }, el('div', { class: 'cap', text: 'Play' }),
-      el('div', { class: 'hint', style: 'margin-top:0', html: '<kbd>A</kbd>–<kbd>K</kbd> drop · <kbd>Z</kbd>/<kbd>X</kbd> octave · click to strike' }));
+      el('div', { class: 'field', style: 'margin-bottom:8px' }, el('div', { class: 'label' }, el('span', { text: 'Keys' })),
+        segmented([{ value: 'instant', label: 'Play instantly' }, { value: 'drop', label: 'Drop ball' }],
+          () => S.keyMode, v => { S.keyMode = v; toast(v === 'drop' ? 'Keys drop a ball: watch the fall time' : 'Keys play instantly'); syncAll(); }, 'Key mode')),
+      el('div', { class: 'hint', style: 'margin-top:0', html: '<kbd>A</kbd>–<kbd>K</kbd> play · <kbd>Z</kbd>/<kbd>X</kbd> octave · click a key' }));
     const tempoSlider = slider({ label: 'Tempo', min: CONFIG.tempo.min, max: CONFIG.tempo.max, step: 1, get: () => S.tempo, set: v => { S.tempo = v; }, fmt: v => v + ' BPM' });
     const rainBtns = rainPanel.querySelectorAll('.btn');
     syncers.push(() => {
@@ -3244,7 +3309,7 @@ setInterval(() => {
     if (e.repeat) { if (e.code === 'Space') e.preventDefault(); return; }
     if (e.code in NOTE_KEYS) {
       const midi = 60 + 12 * S.octaveShift + NOTE_KEYS[e.code];
-      if (midi >= CONFIG.keys.lowMidi && midi <= CONFIG.keys.highMidi) dropNote(midi);
+      if (midi >= CONFIG.keys.lowMidi && midi <= CONFIG.keys.highMidi) playNote(midi);
       return;
     }
     switch (e.code) {
