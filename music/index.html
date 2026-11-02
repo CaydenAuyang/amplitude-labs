@@ -7,7 +7,7 @@
 <meta name="description" content="A physics-powered piano: glowing note-balls fall onto spring-loaded keys and play real synthesized notes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Host+Grotesk:wght@300;400&family=Martian+Mono:wght@400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
 <style>
 :root {
@@ -355,6 +355,59 @@ table.ratios th:first-child { text-align: left; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; }
 }
+
+/* ---------- Editorial restyle to match the Amplitude Labs hub (ink, paper, hairlines, one accent) ---------- */
+:root {
+  --bg: #0d0d0c; --bg2: #0d0d0c; --glass: transparent; --glass-2: transparent;
+  --line: rgba(244,243,239,.14); --line-2: rgba(244,243,239,.3);
+  --text: #f4f3ef; --muted: rgba(244,243,239,.55); --dim: rgba(244,243,239,.38);
+  --grad: #f4f3ef; --hot: #ff5a36;
+  --mono: 'Martian Mono', ui-monospace, monospace;
+  --sans: 'Host Grotesk', 'Helvetica Neue', Arial, sans-serif;
+}
+body { background: #0d0d0c; font-family: var(--sans); font-weight: 300; }
+.topbar, .section, .chip, .overlay, .card, .popover { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.topbar { background: #0d0d0c; }
+.logo, .sec-icon, .sec-meta { display: none !important; }
+.brand h1 { font-weight: 400; font-size: 19px; letter-spacing: -.02em; }
+.pill { font-family: var(--mono); font-weight: 400; font-size: 10px; letter-spacing: .1em; color: var(--muted); background: none; border: 1px solid var(--line); }
+.tb-btn, .btn { border-radius: 999px; background: none; font-family: var(--mono); font-weight: 400; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; }
+.tb-btn:hover, .btn:hover, .tb-btn.active, .btn.on { background: #f4f3ef; color: #0d0d0c; border-color: #f4f3ef; }
+kbd { background: none; border-radius: 3px; }
+.sidebar { background: #0d0d0c; }
+.side-scroll { padding: 0 0 24px; }
+.section { background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; margin: 0; }
+.section.flash { border-color: var(--hot); }
+.sec-head { border-radius: 0; padding: 16px 20px !important; }
+.sec-head:hover { background: none; }
+.sec-title { font-family: var(--mono); font-weight: 400; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; }
+.sec-pad { padding-left: 20px !important; padding-right: 20px !important; }
+.seg { border-radius: 999px; background: none; }
+.seg button { border-radius: 999px; }
+.seg button.on { background: #f4f3ef; color: #0d0d0c; box-shadow: none; font-weight: 400; }
+.song { border-radius: 0; background: none; }
+.song.on { background: none; border-color: var(--hot); box-shadow: none; }
+.song.on .m { color: var(--hot); }
+.slider .fill { height: 1px; top: 10.5px; border-radius: 0; background: #f4f3ef; }
+.slider .thumb { width: 12px; height: 12px; margin-left: -6px; top: 5px; box-shadow: none; background: #f4f3ef; }
+.switch[aria-checked="true"] { background: var(--hot); }
+.chip { background: #0d0d0c; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; }
+.chip .tag, .toast .num, .mods li code { color: var(--hot); }
+.big-note .n { background: none; color: var(--text); font-weight: 400; }
+.stat, .poe, .formula { background: none; border-radius: 0; border: 0; border-top: 1px solid var(--line); }
+.poe h4 .no { background: none; color: var(--hot); border: 1px solid var(--line); border-radius: 0; }
+.poe p b, .poe p b.o, .poe p b.e { color: var(--hot); }
+.overlay { background: rgba(13,13,12,.72); }
+.card { background: #0d0d0c; border: 1px solid var(--line); border-radius: 0; box-shadow: none; padding: 36px; }
+.card h2 { font-weight: 300; font-size: 64px; letter-spacing: -.045em; line-height: .95; margin: 14px 0 14px; }
+.card h2 .g { background: none; color: var(--text); }
+.card .lede { font-size: 18px; }
+.try li { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+.try li .i { background: none; color: var(--hot); border: 1px solid var(--line); border-radius: 0; }
+.start { border-radius: 999px; background: #f4f3ef; color: #0d0d0c; box-shadow: none; font-family: var(--mono); font-weight: 400; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+.start:hover { background: var(--hot); filter: none; }
+.start svg { display: none; }
+.help-card { background: #0d0d0c; border-radius: 0; box-shadow: none; }
 </style>
 </head>
 <body>
@@ -410,11 +463,10 @@ table.ratios th:first-child { text-align: left; }
   <div class="card">
     <div class="eyebrow"><span class="pill">Music</span> Amplitude Labs · Lab 2 of 4</div>
     <h2 id="introTitle">Gravity <span class="g">Piano</span></h2>
-    <p class="lede">A piano played by gravity.</p>
+    <p class="lede">Balls fall onto the keys and play the notes. Gravity is the pianist.</p>
     <ul class="try">
-      <li><span class="i">1</span><span>Press <kbd>A</kbd>–<kbd>K</kbd> or click a key</span></li>
-      <li><span class="i">2</span><span>Play a song, landing on the beat</span></li>
-      <li><span class="i">3</span><span>Rain with Pentatonic lock</span></li>
+      <li><span class="i">1</span><span>Click any key, or type <kbd>A</kbd> to <kbd>K</kbd> on your keyboard.</span></li>
+      <li><span class="i">2</span><span>Pick a song in Scenarios and watch it play itself.</span></li>
     </ul>
     <button class="start" id="btnStart" aria-label="Start Gravity Piano and enable sound">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="#1A1206"><path d="M4 2.8v10.4c0 .6.7 1 1.2.6l8-5.2a.7.7 0 0 0 0-1.2l-8-5.2C4.7 1.8 4 2.2 4 2.8Z"/></svg>
@@ -513,7 +565,7 @@ const GP = {
     scale: { type: CONFIG.scale.default, root: CONFIG.scale.root },
     keyMode: 'instant',           // 'instant' = keys sound at once; 'drop' = keys drop a ball (shows fall time)
     chordQuality: 'major',        // 'major' | 'minor' | 'diminished' | 'augmented'
-    layers: { names: true, theory: true, chord: false, spectrum: true, staff: true, xray: false },
+    layers: { names: true, theory: false, chord: false, spectrum: false, staff: false, xray: false },
     present: false,
     song: null,                   // id of playing song or null
     reverbWet: CONFIG.audio.reverbWet,
@@ -3373,9 +3425,9 @@ CONFIG.fx = {
     const layerBox = el('div', null, LAYERS.map(toggleRow));
     side.append(
       section('scen', 'Scenarios', 'scen', true, buildScenarios()),
-      section('controls', 'Controls', 'ctrl', true, buildControls()),
-      section('layers', 'Layers', 'layers', true, layerBox),
-      section('live', 'Live data', 'live', true, buildLive()),
+      section('controls', 'Controls', 'ctrl', false, buildControls()),
+      section('layers', 'Layers', 'layers', false, layerBox),
+      section('live', 'Live data', 'live', false, buildLive()),
       section('lesson', 'Lesson', 'lesson', false, buildLesson(), '3 POE'),
       section('hood', 'Under the hood', 'hood', false, el('div', null, hoodList,
         el('div', { class: 'hint', html: 'Fixed step <span class="num">1000/60/' + CONFIG.physics.substeps + ' ms</span> × ' + CONFIG.physics.substeps + ' · tune in <span class="num">CONFIG</span>' }))));
