@@ -21,7 +21,7 @@ Cayden (lead), Christoph, Ronan, James H.
 
 1. Accept the GitHub invite (email, or https://github.com/CaydenAuyang/hackathon-physics/invitations).
 2. Open your prompt file above, click the copy icon ("Copy raw file"), and paste it into Claude Code or Cursor's agent. It clones the repo, builds your lab in its own folder and pushes after each phase.
-3. No coding tool? Paste the prompt into claude.ai, download the file it gives you, then on github.com open your lab's folder and use Add file > Upload files to add it as `index.html`.
+3. No coding tool, or the push fails? Paste the prompt into claude.ai (or open the file the agent made), copy the code, then on github.com click Add file > Create new file, name it with your folder, for example `stats/index.html` (typing the slash makes the folder), paste, and Commit changes.
 
 **Rule #1: only touch your own folder.** Four people push to this repo at the same time.
 
