@@ -130,6 +130,9 @@
   canvas.chart { width: 100%; height: 110px; display: block; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--line); }
   .legend { display: flex; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 6px; }
   .legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  .subrow { display: flex; justify-content: space-between; align-items: center; }
+  .mini { font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none; padding: 4px 9px; border-radius: 7px; border: 1px solid rgba(34,211,238,.35); background: rgba(34,211,238,.08); color: #67E8F9; cursor: pointer; transition: background .18s; }
+  .mini:hover { background: rgba(34,211,238,.18); }
   table.kt { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
   table.kt th { font-family: Inter, sans-serif; font-weight: 600; color: var(--muted); font-size: 10.5px; text-align: right; padding: 4px 3px; border-bottom: 1px solid var(--line); }
   table.kt td { text-align: right; padding: 4px 3px; border-bottom: 1px solid rgba(255,255,255,.04); }
@@ -266,7 +269,28 @@
 
     <section class="sec" data-sec="live">
       <button class="sec-h" aria-label="Toggle Live data section">Live data <span class="chev">▼</span></button>
-      <div class="sec-b" id="liveBox"></div>
+      <div class="sec-b">
+        <div id="liveEmpty" class="small muted">Click a planet to see its distance, speed, energy and orbit.</div>
+        <div id="liveData" hidden>
+          <div class="kv">
+            <span>Body</span><span class="val" id="lvName"></span>
+            <span>Distance from star</span><span class="val" id="lvR"></span>
+            <span>Speed</span><span class="val" id="lvV"></span>
+            <span>Kinetic energy</span><span class="val" id="lvKE"></span>
+            <span>Potential energy</span><span class="val" id="lvPE"></span>
+            <span>Total energy</span><span class="val" id="lvE"></span>
+            <span>Status</span><span class="val" id="lvBound"></span>
+            <span>Measured period</span><span class="val" id="lvT"></span>
+            <span>Eccentricity</span><span class="val" id="lvEcc"></span>
+          </div>
+          <div class="sub">Energy per unit mass · AU²/yr²</div>
+          <canvas class="chart" id="eChart" aria-label="Energy chart"></canvas>
+          <div class="legend"><span><i style="background:#22D3EE"></i>Kinetic</span><span><i style="background:#A78BFA"></i>Potential</span><span><i style="background:#F8FAFC"></i>Total</span></div>
+        </div>
+        <div class="sub subrow">Kepler's third law <button class="mini" id="btnCSV" aria-label="Copy Kepler table as CSV">Copy as CSV</button></div>
+        <table class="kt" id="kTable"></table>
+        <div class="small muted" style="margin-top:8px">a = average of closest and farthest distance over the last lap. T = time for the last full lap.</div>
+      </div>
     </section>
 
     <section class="sec closed" data-sec="lesson">
@@ -300,6 +324,10 @@ const CONFIG = {
   PLANET_MASS_MIN_MJ: 0.05,      // "next planet mass" slider range, in Jupiter masses
   PLANET_MASS_MAX_MJ: 30,
   LAUNCH_PER_PX: 0.025,          // launch speed (px/step) per world px of pull
+  PREVIEW_ORBITS: 2.5,           // how many orbits the dotted prediction shows
+  PREVIEW_MAX_STEPS: 7000,       // cap on preview integration steps per frame
+  ENERGY_HISTORY: 300,           // points kept in the energy chart
+  ENERGY_EVERY: 4,               // sample the energy chart every N steps
   TRAIL_LENGTH: 260,             // points kept per trail
   TRAIL_EVERY: 2,                // record a trail point every N physics steps
   BELT_COUNT: 46,                // asteroids added by "Add asteroid belt"
@@ -349,7 +377,7 @@ let paletteIdx = 0;
 
 function planetRadius(mSun) {
   const mj = mSun / CONFIG.JUPITER;
-  return Math.max(3.5, Math.min(16, 5 + 3.2 * Math.cbrt(mj) - 1.5));
+  return Math.max(5, Math.min(16, 4 + 3.2 * Math.cbrt(mj)));
 }
 function starRadius(mSun) { return CONFIG.STAR_RADIUS * Math.pow(mSun, 0.4); }
 
@@ -440,6 +468,123 @@ function zeroMomentum() {
   if (!m) return;
   const vx = px / m, vy = py / m;
   for (const b of bodies) Body.setVelocity(b, { x: b.velocity.x - vx, y: b.velocity.y - vy });
+}
+
+// ---------- orbit measurement ----------
+// The "host" is what a body orbits: its nearest star, or the barycentre of all
+// stars when it is far outside a multiple-star system.
+function hostOf(b, stars) {
+  stars = stars || bodies.filter(s => s.orb.kind === 'star');
+  stars = stars.filter(s => s !== b);
+  if (!stars.length) return null;
+  const one = s => ({ key: s.orb.id, x: s.position.x, y: s.position.y, vx: s.velocity.x, vy: s.velocity.y, m: s.orb.m });
+  if (stars.length === 1) return one(stars[0]);
+  let m = 0, x = 0, y = 0, vx = 0, vy = 0;
+  for (const s of stars) { m += s.orb.m; x += s.position.x * s.orb.m; y += s.position.y * s.orb.m; vx += s.velocity.x * s.orb.m; vy += s.velocity.y * s.orb.m; }
+  const bc = { key: 'bc', x: x / m, y: y / m, vx: vx / m, vy: vy / m, m };
+  let sep = 0;
+  for (const s of stars) sep = Math.max(sep, Math.hypot(s.position.x - bc.x, s.position.y - bc.y));
+  if (Math.hypot(b.position.x - bc.x, b.position.y - bc.y) > 3 * sep) return bc;
+  let best = stars[0], bd = Infinity;
+  for (const s of stars) { const d = Math.hypot(s.position.x - b.position.x, s.position.y - b.position.y); if (d < bd) { bd = d; best = s; } }
+  return one(best);
+}
+
+function trackOrbit(b, stars) {
+  const o = b.orb, h = hostOf(b, stars);
+  if (!h) { o.host = null; return; }
+  const dx = b.position.x - h.x, dy = b.position.y - h.y;
+  const r = Math.hypot(dx, dy), ang = Math.atan2(dy, dx);
+  if (o.lastAng === null || o.hostKey !== h.key) {
+    o.hostKey = h.key; o.lastAng = ang; o.cum = 0; o.wraps = 0; o.crossTimes = [S.simSteps];
+    o.rMin = r; o.rMax = r; o.period = null; o.aMeas = null; o.eMeas = null;
+  }
+  let d = ang - o.lastAng;
+  if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI;
+  o.lastAng = ang; o.cum += d;
+  o.rMin = Math.min(o.rMin, r); o.rMax = Math.max(o.rMax, r);
+  const n = Math.floor(Math.abs(o.cum) / (2 * Math.PI));
+  if (n > o.wraps && Math.abs(d) > 1e-9) {
+    o.wraps = n;
+    // interpolate the exact step where the angle crossed a full turn
+    const over = Math.abs(o.cum) - n * 2 * Math.PI;
+    const tCross = S.simSteps - over / Math.abs(d);
+    o.crossTimes.push(tCross);
+    if (o.crossTimes.length > 1) {
+      o.period = tCross - o.crossTimes[o.crossTimes.length - 2];
+      o.aMeas = (o.rMin + o.rMax) / 2;
+      o.eMeas = (o.rMax - o.rMin) / (o.rMax + o.rMin);
+      o.periodHostM = h.m;
+    }
+    o.rMin = r; o.rMax = r;
+  }
+  o.host = h;
+}
+
+const EU = Math.pow(STEPS_PER_YEAR / CONFIG.AU, 2);   // (px/step)^2 → (AU/yr)^2
+function energyOf(b) {
+  const h = b.orb.host || hostOf(b);
+  const vx = b.velocity.x - (h ? h.vx : 0), vy = b.velocity.y - (h ? h.vy : 0);
+  const ke = 0.5 * (vx * vx + vy * vy);
+  let pe = 0;
+  const g = G();
+  for (const s of attractors()) {
+    if (s === b) continue;
+    const dx = s.position.x - b.position.x, dy = s.position.y - b.position.y;
+    pe -= g * s.orb.m / Math.sqrt(dx * dx + dy * dy + EPS2);
+  }
+  let ecc = null;
+  if (h) {
+    const rx = b.position.x - h.x, ry = b.position.y - h.y;
+    const L = rx * vy - ry * vx, mu = g * h.m;
+    const eps = ke - mu / Math.hypot(rx, ry);
+    ecc = Math.sqrt(Math.max(0, 1 + 2 * eps * L * L / (mu * mu)));
+  }
+  return { ke: ke * EU, pe: pe * EU, e: (ke + pe) * EU, ecc, h };
+}
+
+// Ghost particle for the slingshot preview: same integrator as Matter
+// (kick then drift), other bodies held fixed.
+function predictPath(start, v) {
+  const src = attractors().map(s => ({ x: s.position.x, y: s.position.y, m: s.orb.m, r: s.orb.r }));
+  const g = G();
+  let x = start.x, y = start.y, vx = v.x, vy = v.y, pe = 0, M = 0;
+  for (const s of src) { pe -= g * s.m / Math.sqrt((s.x - x) ** 2 + (s.y - y) ** 2 + EPS2); M += s.m; }
+  const E = 0.5 * (vx * vx + vy * vy) + pe;
+  const bound = E < 0;
+  let steps = 1600;
+  if (bound && M > 0) {
+    const a = -g * M / (2 * E);
+    steps = Math.min(CONFIG.PREVIEW_MAX_STEPS, Math.ceil(2 * Math.PI * Math.sqrt(a * a * a / (g * M)) * CONFIG.PREVIEW_ORBITS));
+  }
+  const stride = Math.max(1, Math.ceil(steps / 420));
+  const pts = [];
+  let hit = null;
+  for (let i = 0; i < steps; i++) {
+    let ax = 0, ay = 0;
+    for (const s of src) {
+      const dx = s.x - x, dy = s.y - y, d2 = dx * dx + dy * dy + EPS2;
+      const f = g * s.m / (d2 * Math.sqrt(d2));
+      ax += f * dx; ay += f * dy;
+      if (d2 < s.r * s.r) hit = { x, y };
+    }
+    if (hit) break;
+    vx += ax; vy += ay; x += vx; y += vy;
+    if (i % stride === 0) pts.push(x, y);
+    if (Math.abs(x - C.x) > 9000 || Math.abs(y - C.y) > 9000) break;
+  }
+  return { pts, bound, hit };
+}
+
+// strongest pull at a point, for the speed gauge
+function dominantAt(p) {
+  let best = null, bf = 0;
+  for (const s of attractors()) {
+    const d2 = (s.position.x - p.x) ** 2 + (s.position.y - p.y) ** 2 + EPS2;
+    const f = s.orb.m / d2;
+    if (f > bf) { bf = f; best = s; }
+  }
+  return best;
 }
 
 function processMerges() {
@@ -743,6 +888,27 @@ function drawSelection() {
 function drawSlingshot() {
   if (!drag || drag.mode !== 'launch') return;
   const a = worldToScreen(drag.start.x, drag.start.y), c = worldToScreen(drag.cur.x, drag.cur.y);
+  const lv = launchVelocity();
+  if (Math.hypot(lv.x, lv.y) > 0.02) {
+    const pr = predictPath(drag.start, lv);
+    drag.bound = pr.bound;
+    const col = pr.bound ? '52,211,153' : '251,146,60';
+    const n = pr.pts.length / 2;
+    ctx.save();
+    for (let i = 0; i < n; i++) {
+      const q = worldToScreen(pr.pts[2 * i], pr.pts[2 * i + 1]);
+      if (q.x < -20 || q.y < -20 || q.x > W + 20 || q.y > H + 20) continue;
+      ctx.fillStyle = `rgba(${col},${0.95 * (1 - i / n) + 0.05})`;
+      ctx.beginPath(); ctx.arc(q.x, q.y, 1.8, 0, Math.PI * 2); ctx.fill();
+    }
+    if (pr.hit) {
+      const q = worldToScreen(pr.hit.x, pr.hit.y);
+      ctx.strokeStyle = '#F87171'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(q.x - 6, q.y - 6); ctx.lineTo(q.x + 6, q.y + 6); ctx.moveTo(q.x + 6, q.y - 6); ctx.lineTo(q.x - 6, q.y + 6); ctx.stroke();
+    }
+    ctx.restore();
+    drawGauge(a, lv, pr.bound);
+  }
   ctx.save();
   // rubber band
   ctx.strokeStyle = 'rgba(232,237,246,0.5)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 4]);
@@ -767,6 +933,52 @@ function drawSlingshot() {
   ctx.restore();
 }
 
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+// speed gauge: launch speed against circular and escape speed at this distance
+function drawGauge(a, v, bound) {
+  const dom = dominantAt(drag.start);
+  if (!dom) return;
+  const r = Math.hypot(drag.start.x - dom.position.x, drag.start.y - dom.position.y);
+  const speed = Math.hypot(v.x - dom.velocity.x, v.y - dom.velocity.y);
+  const vc = circularSpeed(dom.orb.m, r), ve = escapeSpeed(dom.orb.m, r);
+  const big = document.body.classList.contains('present') ? 1.3 : 1;
+  const w = 210 * big, h = 72 * big;
+  let x = a.x - w / 2, y = a.y + 26;
+  if (y + h > H - 10) y = a.y - 26 - h;
+  x = Math.max(8, Math.min(W - w - 8, x));
+  ctx.save();
+  ctx.fillStyle = 'rgba(10,14,24,0.82)'; ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+  roundRect(x, y, w, h, 10); ctx.fill(); ctx.stroke();
+  const bx = x + 12, bw = w - 24, by = y + 38 * big, bh = 6 * big;
+  const max = ve * 1.45;
+  ctx.fillStyle = 'rgba(255,255,255,0.1)'; roundRect(bx, by, bw, bh, 3); ctx.fill();
+  const fw = Math.min(1, speed / max) * bw;
+  const gr = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+  gr.addColorStop(0, '#8B5CF6'); gr.addColorStop(0.55, '#22D3EE'); gr.addColorStop(1, '#FB923C');
+  ctx.fillStyle = gr; roundRect(bx, by, Math.max(2, fw), bh, 3); ctx.fill();
+  ctx.font = `600 ${10 * big}px 'JetBrains Mono', monospace`; ctx.textAlign = 'center';
+  for (const [val, lbl, col] of [[vc, 'v_c', '#A7F3D0'], [ve, 'v_esc', '#FDBA74']]) {
+    const tx = bx + val / max * bw;
+    ctx.fillStyle = col; ctx.fillRect(tx - 1, by - 5, 2, bh + 10);
+    ctx.fillText(lbl, tx, by - 9);
+  }
+  ctx.textAlign = 'left'; ctx.fillStyle = bound ? '#6EE7B7' : '#FDBA74';
+  ctx.font = `600 ${11.5 * big}px 'JetBrains Mono', monospace`;
+  ctx.fillText(`${(speed / vc).toFixed(2)} × v_c`, bx, by + bh + 17 * big);
+  ctx.textAlign = 'right'; ctx.fillStyle = '#8A94A7';
+  ctx.fillText(`${toAUyr(speed).toFixed(2)} AU/yr`, bx + bw, by + bh + 17 * big);
+  ctx.textAlign = 'left'; ctx.font = `600 ${10 * big}px Inter, sans-serif`;
+  ctx.fillStyle = bound ? '#6EE7B7' : '#FDBA74';
+  ctx.fillText(bound ? 'BOUND ORBIT' : 'ESCAPES', bx, y + 14 * big);
+  ctx.textAlign = 'right'; ctx.fillStyle = '#8A94A7';
+  ctx.fillText(`r = ${toAU(r).toFixed(2)} AU`, bx + bw, y + 14 * big);
+  ctx.restore();
+}
+
 function render() {
   drawBackground();
   if (S.layers.trails) drawTrails();
@@ -787,11 +999,23 @@ function recordOrbit(b) {
   }
 }
 
+const hist = { body: null, ke: [], pe: [], e: [] };
 function physicsStep() {
   Engine.update(engine, STEP);
   S.simSteps++;
   processMerges();
-  for (const b of bodies) recordOrbit(b);
+  const stars = bodies.filter(s => s.orb.kind === 'star');
+  for (const b of bodies) {
+    recordOrbit(b);
+    if (b.orb.kind === 'planet' || b.orb.kind === 'probe') trackOrbit(b, stars);
+  }
+  const sel = S.selected;
+  if (sel && S.simSteps % CONFIG.ENERGY_EVERY === 0) {
+    if (hist.body !== sel) { hist.body = sel; hist.ke = []; hist.pe = []; hist.e = []; }
+    const en = energyOf(sel);
+    hist.ke.push(en.ke); hist.pe.push(en.pe); hist.e.push(en.e);
+    if (hist.ke.length > CONFIG.ENERGY_HISTORY) { hist.ke.shift(); hist.pe.shift(); hist.e.shift(); }
+  }
   // drop bodies that wander far away
   for (const b of bodies.slice()) {
     if (b.orb.kind === 'star') continue;
@@ -922,6 +1146,7 @@ function circularSpeed(M, r) {
   const a = G() * M * r / Math.pow(r * r + EPS2, 1.5);
   return Math.sqrt(a * r);
 }
+function escapeSpeed(M, r) { return Math.sqrt(2 * G() * M / Math.sqrt(r * r + EPS2)); }
 function orbiter(star, rAU, opts = {}) {
   const r = rAU * CONFIG.AU;
   const ang = opts.angle || 0;
@@ -946,7 +1171,46 @@ const SCENARIOS = [
       S.selected = p;
     },
   },
+  {
+    key: '2', name: 'Ellipse and Kepler\'s 2nd law',
+    caption: 'Ellipse · Kepler\'s second law', sub: 'Launched slower than circular speed, the planet falls inward and speeds up near the star. Equal areas are swept in equal times.',
+    layers: { sweep: true },
+    load() {
+      const st = makeStar(S.starMass, C.x - 180, C.y); S.starBody = st;
+      const p = orbiter(st, 1.8, { speed: 0.68, body: { name: 'Comet K', color: '#F472B6' } });
+      S.selected = p;
+    },
+  },
+  {
+    key: '3', name: 'Four planets and Kepler\'s 3rd law',
+    caption: 'Four planets · Kepler\'s third law', sub: 'Outer planets are slower and take longer. Watch T² ÷ (a³/M) in the Kepler table settle at 1.00 for every planet.',
+    openSection: 'live',
+    load() {
+      const st = makeStar(S.starMass, C.x, C.y); S.starBody = st;
+      const spec = [[0.5, 'Mercury', '#FBBF24', 0.2], [0.85, 'Venus', '#F472B6', 2.4], [1.35, 'Earth', '#60A5FA', 4.1], [2.05, 'Mars', '#F87171', 1.1]];
+      for (const [a, name, color, ang] of spec) orbiter(st, a, { angle: ang, m: 3e-6, body: { name, color } });
+      S.selected = bodies.find(b => b.orb.name === 'Earth');
+    },
+  },
+  {
+    key: '4', name: 'Escape velocity',
+    caption: 'Escape velocity', sub: 'Three probes leave 1 AU at 0.9, 1.0 and 1.1 × v_esc = √(2GM/r). Below v_esc the probe returns; at or above it, it never does.',
+    zoom: 0.55,
+    load() {
+      const st = makeStar(S.starMass, C.x, C.y); S.starBody = st;
+      const r = CONFIG.AU, ve = escapeSpeed(st.orb.m, r);
+      const spec = [[0.9, '#34D399', -Math.PI / 2], [1.0, '#FBBF24', Math.PI / 6], [1.1, '#FB923C', 5 * Math.PI / 6]];
+      for (const [k, color, ang] of spec) {
+        const p = addBody({ kind: 'probe', m: 0, r: 4, color, name: `Probe ${k.toFixed(1)} v_esc`,
+          x: st.position.x + Math.cos(ang) * r, y: st.position.y + Math.sin(ang) * r,
+          vx: Math.sin(ang) * ve * k, vy: -Math.cos(ang) * ve * k });
+        if (k === 1.0) S.selected = p;
+      }
+    },
+  },
 ];
+
+function resetView(z) { cam.x = C.x; cam.y = C.y; cam.zoom = z || 1; S.follow = false; }
 
 function loadScenario(i) {
   const sc = SCENARIOS[i];
@@ -955,8 +1219,13 @@ function loadScenario(i) {
   S.scenario = i; S.simSteps = 0; acc = 0;
   paletteIdx = 0; nextId = 1;
   S.starMass = 1; syncStarSlider();
+  S.layers.sweep = false;
+  Object.assign(S.layers, sc.layers || {});
+  renderLayers();
+  resetView(sc.zoom || 1);
   sc.load();
-  halfKick(bodies);
+  halfKick(bodies.filter(b => b.orb.kind !== 'probe'));
+  if (sc.openSection) document.querySelector(`.sec[data-sec="${sc.openSection}"]`).classList.remove('closed');
   S.caption = sc.caption; S.captionSub = sc.sub;
   updateCaption();
   renderScenarioList();
@@ -1078,24 +1347,98 @@ function updateHUD() {
   if ((frame.n++ % 6) === 0) updateLive();
 }
 
+const fmtE = x => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(2);
 function updateLive() {
   const b = S.selected;
-  if (!b) { $('liveBox').innerHTML = '<div class="small muted">Click a planet to see its distance, speed and energy.</div>'; return; }
-  const st = nearestStar(b);
-  const r = st ? Vector.magnitude(Vector.sub(b.position, st.position)) : 0;
-  const v = Math.hypot(b.velocity.x, b.velocity.y);
-  $('liveBox').innerHTML = `<div class="kv">
-    <span>Body</span><span class="val" style="color:${b.orb.color}">${b.orb.name}</span>
-    <span>Distance</span><span class="val">${toAU(r).toFixed(3)} AU</span>
-    <span>Speed</span><span class="val">${toAUyr(v).toFixed(2)} AU/yr</span>
-  </div>`;
+  $('liveEmpty').hidden = !!b; $('liveData').hidden = !b;
+  updateLive.k = (updateLive.k || 0) + 1;
+  if (updateLive.k % 5 === 1) updateKeplerTable();
+  if (!b) return;
+  const en = energyOf(b);
+  const h = en.h;
+  const r = h ? Math.hypot(b.position.x - h.x, b.position.y - h.y) : 0;
+  const v = h ? Math.hypot(b.velocity.x - h.vx, b.velocity.y - h.vy) : Math.hypot(b.velocity.x, b.velocity.y);
+  $('lvName').textContent = b.orb.name; $('lvName').style.color = b.orb.color;
+  if (b.orb.kind === 'star') {
+    $('lvR').textContent = '—';
+    $('lvV').textContent = toAUyr(Math.hypot(b.velocity.x, b.velocity.y)).toFixed(2) + ' AU/yr';
+    for (const id of ['lvKE', 'lvPE', 'lvE', 'lvT', 'lvEcc']) $(id).textContent = '—';
+    $('lvBound').innerHTML = `<span class="badge bound">${b.orb.m.toFixed(2)} M☉ star</span>`;
+  } else {
+    $('lvR').textContent = toAU(r).toFixed(3) + ' AU';
+    $('lvV').textContent = `${toAUyr(v).toFixed(2)} AU/yr · ${(toAUyr(v) * KMS_PER_AUYR).toFixed(1)} km/s`;
+    $('lvKE').textContent = fmtE(en.ke); $('lvPE').textContent = fmtE(en.pe); $('lvE').textContent = fmtE(en.e);
+    $('lvBound').innerHTML = Math.abs(en.e) < 0.01 * Math.abs(en.pe) ? '<span class="badge esc">On the edge (E ≈ 0)</span>'
+      : en.e < 0 ? '<span class="badge bound">Bound (E &lt; 0)</span>' : '<span class="badge esc">Escaping (E &gt; 0)</span>';
+    $('lvT').textContent = b.orb.period ? (b.orb.period / STEPS_PER_YEAR).toFixed(3) + ' yr' : (en.e < 0 ? 'measuring…' : '—');
+    $('lvEcc').textContent = en.ecc === null ? '—' : en.ecc.toFixed(3) + (en.ecc < 0.02 ? ' (circle)' : en.ecc < 1 ? ' (ellipse)' : ' (open)');
+  }
+  drawEnergyChart();
+}
+
+function drawEnergyChart() {
+  const cv = $('eChart');
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w) return;
+  const d = Math.min(window.devicePixelRatio || 1, 2);
+  if (cv.width !== Math.round(w * d)) { cv.width = Math.round(w * d); cv.height = Math.round(h * d); }
+  const c = cv.getContext('2d');
+  c.setTransform(d, 0, 0, d, 0, 0);
+  c.clearRect(0, 0, w, h);
+  const n = hist.ke.length;
+  if (n < 2 || hist.body !== S.selected) return;
+  let m = 1e-6;
+  for (let i = 0; i < n; i++) m = Math.max(m, Math.abs(hist.ke[i]), Math.abs(hist.pe[i]), Math.abs(hist.e[i]));
+  m *= 1.15;
+  const yOf = v => h / 2 - v / m * (h / 2 - 6);
+  c.strokeStyle = 'rgba(255,255,255,0.12)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(0, h / 2); c.lineTo(w, h / 2); c.stroke(); c.setLineDash([]);
+  c.font = "10px 'JetBrains Mono', monospace"; c.fillStyle = 'rgba(138,148,167,0.8)'; c.fillText('0', 4, h / 2 - 3);
+  for (const [arr, col, lw] of [[hist.ke, '#22D3EE', 1.5], [hist.pe, '#A78BFA', 1.5], [hist.e, '#F8FAFC', 2]]) {
+    c.strokeStyle = col; c.lineWidth = lw; c.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = i / (CONFIG.ENERGY_HISTORY - 1) * w;
+      i ? c.lineTo(x, yOf(arr[i])) : c.moveTo(x, yOf(arr[i]));
+    }
+    c.stroke();
+  }
+}
+
+function keplerRows() {
+  return bodies.filter(b => b.orb.kind === 'planet' || b.orb.kind === 'probe').map(b => {
+    const o = b.orb;
+    if (!o.period || !o.aMeas) return { b, ready: false };
+    const a = toAU(o.aMeas), T = o.period / STEPS_PER_YEAR, M = o.periodHostM;
+    return { b, ready: true, a, T, T2: T * T, a3: a * a * a, ratio: T * T / (a * a * a / M) };
+  });
+}
+function updateKeplerTable() {
+  const rows = keplerRows();
+  if (!rows.length) { $('kTable').innerHTML = '<tr><td class="muted" style="font-family:Inter;text-align:left">No orbiting planets yet.</td></tr>'; return; }
+  $('kTable').innerHTML = '<tr><th>Planet</th><th>a (AU)</th><th>T (yr)</th><th>T²</th><th>a³</th><th>T²÷(a³/M)</th></tr>' +
+    rows.slice(0, 12).map(r => r.ready
+      ? `<tr><td style="color:${r.b.orb.color}">${r.b.orb.name}</td><td>${r.a.toFixed(3)}</td><td>${r.T.toFixed(3)}</td><td>${r.T2.toFixed(3)}</td><td>${r.a3.toFixed(3)}</td><td class="ratio">${r.ratio.toFixed(3)}</td></tr>`
+      : `<tr><td style="color:${r.b.orb.color}">${r.b.orb.name}</td><td colspan="5" class="muted">measuring first lap…</td></tr>`).join('');
+}
+$('btnCSV').addEventListener('click', () => {
+  const rows = keplerRows().filter(r => r.ready);
+  const csv = ['planet,a_AU,T_yr,T2,a3,T2_over_a3_per_M'].concat(rows.map(r => [r.b.orb.name, r.a.toFixed(4), r.T.toFixed(4), r.T2.toFixed(4), r.a3.toFixed(4), r.ratio.toFixed(4)].join(','))).join('\n');
+  const done = () => toast(rows.length ? `Copied ${rows.length} rows as CSV` : 'No measured orbits yet. Wait one lap.');
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(csv).then(done, () => fallbackCopy(csv, done));
+  else fallbackCopy(csv, done);
+});
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+  ta.remove(); done();
 }
 
 // keyboard
 const KEYS = [
   ['Drag', 'Slingshot launch from empty space'], ['Click', 'Select a body'], ['Drag body', 'Grab and move a body'],
   ['Scroll', 'Zoom around the cursor'], ['Right-drag', 'Pan (or hold Space and drag)'],
-  ['Space', 'Pause / resume'], ['1', 'Load scenario'], ['T', 'Trails layer'], ['P', 'Present mode'], ['?', 'This help'], ['Esc', 'Close overlays'],
+  ['Space', 'Pause / resume (tap)'], ['1 – 7', 'Load a scenario'], ['F', 'Follow the selected body'], ['R', 'Reset the view'],
+  ['Delete', 'Remove the selected body'], ['T', 'Trails layer'], ['P', 'Present mode'], ['?', 'This help'], ['Esc', 'Close overlays'],
 ];
 $('keyList').innerHTML = KEYS.map(([k, d]) => `<kbd>${k}</kbd><span>${d}</span>`).join('');
 function showHelp(v) { $('help').classList.toggle('show', v); }
@@ -1112,7 +1455,7 @@ window.addEventListener('keydown', e => {
   if (k === 'Escape') { showHelp(false); closeIntro(); $('layersPop').classList.remove('show'); return; }
   if (k === ' ') {
     e.preventDefault();
-    if (!spaceDown) { spaceDown = true; spaceDown.t = performance.now(); spaceTap = performance.now(); }
+    if (!spaceDown) { spaceDown = true; spaceTap = performance.now(); }
     return;
   }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1121,6 +1464,9 @@ window.addEventListener('keydown', e => {
   const lower = k.toLowerCase();
   if (lower === 'p') togglePresent();
   else if (lower === 't') toggleLayer('trails');
+  else if (lower === 'f') { if (S.selected) { S.follow = !S.follow; toast(S.follow ? 'Following ' + S.selected.orb.name : 'Follow off'); } else toast('Select a body first'); }
+  else if (lower === 'r') { resetView(SCENARIOS[S.scenario] && SCENARIOS[S.scenario].zoom); toast('View reset'); }
+  else if (k === 'Delete' || k === 'Backspace') { if (S.selected) { const n = S.selected.orb.name; if (S.selected === S.starBody) S.starBody = null; removeBody(S.selected); toast(n + ' removed'); } }
   else if (k >= '1' && k <= '9') loadScenario(+k - 1);
 });
 let spaceTap = 0, panned = false;
@@ -1169,11 +1515,28 @@ if (location.search.includes('selftest')) {
   }
   const ang = Math.atan2(p.position.y - st.position.y, p.position.x - st.position.x);
   const res = `SELFTEST rmin=${(rmin / CONFIG.AU).toFixed(5)} rmax=${(rmax / CONFIG.AU).toFixed(5)} drift=${((rmax - rmin) / CONFIG.AU * 100).toFixed(3)}% endAngle=${ang.toFixed(4)}`;
-  console.log(res);
+  // Kepler's third law check on the four-planet scenario
+  loadScenario(2);
+  for (let i = 0; i < 6 * STEPS_PER_YEAR; i++) physicsStep();
+  const kr = keplerRows().map(r => r.ready ? `${r.b.orb.name}:a=${r.a.toFixed(3)},T=${r.T.toFixed(3)},ratio=${r.ratio.toFixed(4)}` : r.b.orb.name + ':pending').join(' ');
+  // escape probes after 6 years
+  loadScenario(3);
+  for (let i = 0; i < 6 * STEPS_PER_YEAR; i++) physicsStep();
+  const pr = bodies.filter(b => b.orb.kind === 'probe').map(b => `${b.orb.name}:E=${energyOf(b).e.toFixed(3)},r=${toAU(Math.hypot(b.position.x - C.x, b.position.y - C.y)).toFixed(2)}`).join(' ');
+  const pp = predictPath({ x: C.x + 200, y: C.y }, { x: 0, y: -2.6 });
+  console.log(res); console.log('KEPLER ' + kr); console.log('ESCAPE ' + pr); console.log('PREDICT bound=' + pp.bound + ' pts=' + pp.pts.length);
   document.title = res;
   loadScenario(0);
 } else {
   $('intro').classList.add('show');
+}
+if (location.search.includes('dbgdrag')) {
+  closeIntro();
+  setTimeout(() => {
+    const r = art.getBoundingClientRect(), p = worldToScreen(C.x + 300, C.y);
+    const ev = (t, x, y, b) => art.dispatchEvent(new PointerEvent(t, { clientX: r.left + x, clientY: r.top + y, button: b || 0, pointerId: 1, bubbles: true }));
+    ev('pointerdown', p.x, p.y); ev('pointermove', p.x + 10, p.y + 70);
+  }, 1500);
 }
 requestAnimationFrame(frame);
 </script>
