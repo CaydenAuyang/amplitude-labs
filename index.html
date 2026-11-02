@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hackathon Physics Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1 id="title">Hackathon Physics Game</h1>
+    <div id="hud">
+      <span>Score: <b id="score">0</b></span>
+      <span id="message">Arrow keys to move, drag things with the mouse</span>
+      <button id="reset">Reset</button>
+    </div>
+  </header>
+  <div id="stage"></div>
+
+  <!-- Matter.js from a CDN, no install needed -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
+
+  <!-- Order matters: shared setup first, main.js last -->
+  <script src="js/config.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/controls.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
