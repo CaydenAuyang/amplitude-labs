@@ -4,178 +4,385 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Amplitude Labs</title>
+  <meta name="description" content="Four Matter.js labs for four Pomfret departments, built by Team Amplitude at the Fall Hack-a-Thon 2026.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400&family=Martian+Mono:wght@400&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --ink: #0d0d0c;
+      --paper: #f4f3ef;
+      --muted: rgba(244, 243, 239, 0.55);
+      --hairline: rgba(244, 243, 239, 0.16);
+      --accent: #ff5a36;
+      --font-sans: 'Host Grotesk', 'Helvetica Neue', Arial, sans-serif;
+      --font-mono: 'Martian Mono', ui-monospace, Menlo, monospace;
+      --ease: cubic-bezier(0.7, 0, 0.3, 1);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --gutter: 20px;
+    }
     * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; }
+    html { background: var(--ink); }
     body {
-      font-family: Inter, system-ui, sans-serif;
-      background: #070A12;
-      color: #E8EDF6;
-      overflow-x: hidden;
+      margin: 0;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--font-sans);
+      font-weight: 300;
+      font-size: clamp(16px, 0.9rem + 0.2vw, 18px);
+      line-height: 1.35;
+      -webkit-font-smoothing: antialiased;
     }
-    #bg { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
-    main { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 72px 24px 48px; }
-    .eyebrow {
-      font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .14em;
-      text-transform: uppercase; color: #8A94A7;
+    /* Film grain over everything, like the Civic site */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 50;
+      opacity: 0.06; mix-blend-mode: screen;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
-    h1 {
-      font-size: clamp(44px, 8vw, 96px); font-weight: 800; letter-spacing: -.04em; line-height: .95;
-      margin: 14px 0 18px;
-      background: linear-gradient(100deg, #E8EDF6 10%, #8B5CF6 45%, #22D3EE 75%, #F59E0B);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
+    a { color: inherit; text-decoration: none; }
+    .mono {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
-    .lede { font-size: 19px; color: #A9B3C4; max-width: 640px; line-height: 1.5; margin: 0 0 48px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; }
-    .card {
-      --accent: #8B5CF6;
-      position: relative; display: flex; flex-direction: column; gap: 10px;
-      padding: 24px; min-height: 240px; border-radius: 16px; text-decoration: none; color: inherit;
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+
+    header {
+      position: relative; z-index: 2;
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: start;
+      padding: 18px var(--gutter);
+      font-size: 15px; font-weight: 400; line-height: 1.15;
+    }
+    header nav { display: flex; gap: 22px; padding-top: 6px; }
+    header .right { justify-self: end; padding-top: 6px; }
+    .roll { position: relative; }
+    .roll::after {
+      content: ''; position: absolute; left: 0; right: 0; bottom: -3px; height: 1px;
+      background: currentColor; transform: scaleX(0); transform-origin: right;
+      transition: transform 0.6s var(--ease-out);
+    }
+    .roll:hover::after { transform: scaleX(1); transform-origin: left; }
+
+    .hero { padding: 0 var(--gutter); min-height: calc(100vh - 70px); display: flex; flex-direction: column; }
+    .wordmark {
+      margin: 2vh 0 0;
+      font-weight: 300;
+      font-size: 20vw;
+      line-height: 0.82;
+      letter-spacing: -0.045em;
+      white-space: nowrap;
       overflow: hidden;
+      margin-left: -0.05em;
     }
-    .card::before {
-      content: ''; position: absolute; inset: -40% -40% auto auto; width: 220px; height: 220px;
-      background: radial-gradient(circle, var(--accent), transparent 70%); opacity: .22;
-      transition: opacity .2s ease;
+    .wordmark span { display: inline-block; animation: rise 1.1s var(--ease) both; }
+    @keyframes rise { from { transform: translateY(105%); } }
+    .sub { display: flex; justify-content: flex-end; margin-top: 10px; }
+
+    .string-wrap { position: relative; margin: 4vh calc(-1 * var(--gutter)) 0; }
+    #string { display: block; width: 100%; height: 160px; cursor: crosshair; touch-action: pan-y; }
+    .string-label { position: absolute; left: var(--gutter); top: 6px; color: var(--muted); }
+    .string-readout { position: absolute; right: var(--gutter); top: 6px; color: var(--muted); }
+    .string-readout b { color: var(--paper); font-weight: 400; }
+
+    .hero-foot {
+      margin-top: auto; padding: 4vh 0 28px;
+      display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gutter); align-items: end;
+      font-size: clamp(18px, 1.4vw, 24px); line-height: 1.25;
     }
-    .card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 18px 50px -20px var(--accent); }
-    .card:hover::before { opacity: .4; }
-    .num { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); }
-    .pill {
-      align-self: flex-start; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
-      color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
-      background: color-mix(in srgb, var(--accent) 12%, transparent);
+    .hero-foot p { margin: 0; }
+    .hero-foot .a { grid-column: 1 / span 4; }
+    .hero-foot .b { grid-column: 5 / span 4; color: var(--muted); }
+    .hero-foot .down { grid-column: 12; justify-self: end; font-size: 18px; }
+
+    .labs { padding: 12vh var(--gutter) 0; }
+    .section-head { display: flex; justify-content: space-between; color: var(--muted); padding-bottom: 18px; }
+    .row {
+      display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gutter); align-items: baseline;
+      padding: 28px 0 30px;
+      border-top: 1px solid var(--hairline);
+      position: relative;
     }
-    .card h2 { margin: 6px 0 0; font-size: 26px; letter-spacing: -.02em; }
-    .card p { margin: 0; color: #A9B3C4; line-height: 1.5; font-size: 15px; flex: 1; }
-    .open { font-weight: 600; font-size: 14px; color: var(--accent); }
+    .labs .row:last-child { border-bottom: 1px solid var(--hairline); }
+    .row::before {
+      content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 1px; background: var(--accent);
+      transform: scaleX(0); transform-origin: left; transition: transform 0.8s var(--ease);
+    }
+    .row:hover::before, .row:focus-visible::before { transform: scaleX(1); }
+    .row:focus-visible { outline: none; }
+    .row .num { grid-column: 1; color: var(--muted); }
+    .row .name {
+      grid-column: 2 / span 6;
+      font-size: clamp(44px, 6.6vw, 120px); line-height: 0.95; letter-spacing: -0.035em;
+      transition: transform 0.7s var(--ease), color 0.4s ease;
+    }
+    .row:hover .name { transform: translateX(0.12em); }
+    .row .meta { grid-column: 8 / span 4; display: flex; flex-direction: column; gap: 12px; }
+    .row .dept { color: var(--muted); }
+    .row .desc { margin: 0; max-width: 34ch; }
+    .row .go { grid-column: 12; justify-self: end; font-size: 26px; transition: transform 0.7s var(--ease), color 0.4s ease; }
+    .row:hover .go { transform: rotate(45deg); color: var(--accent); }
+
+    .statement {
+      padding: 18vh var(--gutter) 14vh;
+      font-size: clamp(30px, 4.3vw, 80px); line-height: 1.05; letter-spacing: -0.025em;
+      max-width: 22ch;
+    }
+    .statement em { font-style: normal; color: var(--accent); }
+
     footer {
-      margin-top: 56px; display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between;
-      color: #8A94A7; font-size: 14px;
+      display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gutter);
+      padding: 22px var(--gutter) 26px; border-top: 1px solid var(--hairline); color: var(--muted);
     }
-    footer a { color: #A9B3C4; }
-    @media (max-width: 600px) { main { padding: 48px 16px 32px; } }
+    footer .f1 { grid-column: 1 / span 4; }
+    footer .f2 { grid-column: 5 / span 4; }
+    footer .f3 { grid-column: 9 / span 4; justify-self: end; color: var(--paper); }
+
+    .wordmark.done span { animation: none; }
+
+    @media (max-width: 760px) {
+      :root { --gutter: 16px; }
+      header { grid-template-columns: 1fr auto; }
+      header nav { display: none; }
+      .hero { min-height: auto; }
+      .hero-foot { grid-template-columns: 1fr; gap: 14px; padding-top: 6vh; }
+      .hero-foot .a, .hero-foot .b, .hero-foot .down { grid-column: auto; justify-self: start; }
+      .row { grid-template-columns: 1fr auto; gap: 10px; }
+      .row .num { grid-column: 1 / -1; }
+      .row .name { grid-column: 1; }
+      .row .go { grid-column: 2; grid-row: 2; }
+      .row .meta { grid-column: 1 / -1; }
+      footer { grid-template-columns: 1fr; gap: 8px; }
+      footer .f1, footer .f2, footer .f3 { grid-column: auto; justify-self: start; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .wordmark span { animation: none; }
+    }
   </style>
 </head>
 <body>
-  <canvas id="bg" aria-hidden="true"></canvas>
-  <main>
-    <div class="eyebrow">Team Amplitude · Pomfret Fall Hack-a-Thon 2026</div>
-    <h1>Amplitude Labs</h1>
-    <p class="lede">Four interactive physics-engine labs for four departments. Each one turns a real classroom idea into something you can grab, fling and watch unfold. Built with Matter.js.</p>
+  <header>
+    <a href="./">Amplitude Labs<br>Pomfret School</a>
+    <nav>
+      <a class="roll" href="#labs">Labs</a>
+      <a class="roll" href="https://github.com/CaydenAuyang/amplitude-labs">Source</a>
+    </nav>
+    <span class="right">Fall Hack-a-Thon 2026</span>
+  </header>
 
-    <div class="grid">
-      <a class="card" href="physics/" style="--accent:#8B5CF6">
-        <span class="num">01</span>
-        <span class="pill">Physics</span>
-        <h2>Orbit Lab</h2>
-        <p>Fling planets around a star and watch Newton's gravity and Kepler's three laws play out live.</p>
-        <span class="open">Open lab →</span>
-      </a>
-      <a class="card" href="music/" style="--accent:#F59E0B">
-        <span class="num">02</span>
-        <span class="pill">Music</span>
-        <h2>Gravity Piano</h2>
-        <p>A piano played by falling notes. Intervals, chords, scales and frequencies light up as it plays.</p>
-        <span class="open">Open lab →</span>
-      </a>
-      <a class="card" href="languages/" style="--accent:#10B981">
-        <span class="num">03</span>
-        <span class="pill">World Languages</span>
-        <h2>Lingo Drop</h2>
-        <p>Spanish and French word cards rain down. Sort them by meaning, gender and conjugation, and hear every word aloud.</p>
-        <span class="open">Open lab →</span>
-      </a>
-      <a class="card" href="stats/" style="--accent:#38BDF8">
-        <span class="num">04</span>
-        <span class="pill">Statistics</span>
-        <h2>Galton Lab</h2>
-        <p>Every ball is a coin-flip experiment. Watch the binomial become a bell curve, with the stats drawn on top.</p>
-        <span class="open">Open lab →</span>
-      </a>
+  <section class="hero">
+    <h1 class="wordmark" aria-label="Amplitude"></h1>
+    <div class="sub mono">Labs</div>
+
+    <div class="string-wrap">
+      <span class="string-label mono">Amplitude (n.): how far a wave swings. Move across the line.</span>
+      <span class="string-readout mono">A = <b id="amp">0.0</b> px</span>
+      <canvas id="string" aria-label="A string you can pluck by moving the pointer across it"></canvas>
     </div>
 
-    <footer>
-      <span>Cayden, Christoph, Ronan and James H.</span>
-      <span>Matter.js 0.20 · <a href="https://github.com/CaydenAuyang/amplitude-labs">Source on GitHub</a></span>
-    </footer>
-  </main>
+    <div class="hero-foot">
+      <p class="a">Four labs for four departments, built in one class period.</p>
+      <p class="b">Team Amplitude: Cayden, Christoph, Ronan and James H.</p>
+      <a class="down" href="#labs" aria-label="Jump to the labs">↓</a>
+    </div>
+  </section>
+
+  <section class="labs" id="labs">
+    <div class="section-head mono"><span>Labs</span><span>(04)</span></div>
+
+    <a class="row reveal" href="physics/">
+      <span class="num mono">01</span>
+      <span class="name">Orbit Lab</span>
+      <span class="meta">
+        <span class="dept mono">Physics</span>
+        <p class="desc">Fling planets around a star and watch Newton's gravity and Kepler's three laws show up in the numbers.</p>
+      </span>
+      <span class="go" aria-hidden="true">↗</span>
+    </a>
+    <a class="row reveal" href="music/">
+      <span class="num mono">02</span>
+      <span class="name">Gravity Piano</span>
+      <span class="meta">
+        <span class="dept mono">Music</span>
+        <p class="desc">A piano played by falling notes. Intervals, chords, scales and frequencies appear as it plays.</p>
+      </span>
+      <span class="go" aria-hidden="true">↗</span>
+    </a>
+    <a class="row reveal" href="languages/">
+      <span class="num mono">03</span>
+      <span class="name">Lingo Drop</span>
+      <span class="meta">
+        <span class="dept mono">World Languages</span>
+        <p class="desc">Spanish and French word cards fall into a pile. Sort them by theme, gender and conjugation, and hear each one aloud.</p>
+      </span>
+      <span class="go" aria-hidden="true">↗</span>
+    </a>
+    <a class="row reveal" href="stats/">
+      <span class="num mono">04</span>
+      <span class="name">Galton Lab</span>
+      <span class="meta">
+        <span class="dept mono">Statistics</span>
+        <p class="desc">Every ball is a coin-flip experiment. The bins fill into a bell curve, with the statistics drawn on top.</p>
+      </span>
+      <span class="go" aria-hidden="true">↗</span>
+    </a>
+  </section>
+
+  <p class="statement reveal">Every lab runs on Matter.js, a 2D physics engine. Press <em>X</em> in any lab to see the real bodies, springs and contacts under the drawing.</p>
+
+  <footer class="mono">
+    <span class="f1">Pomfret School · ADV Computer Coding</span>
+    <span class="f2">Matter.js 0.20</span>
+    <a class="f3 roll" href="https://github.com/CaydenAuyang/amplitude-labs">Source on GitHub ↗</a>
+  </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
   <script>
-    // Background: glowing particles falling through a field of pegs, a small taste of all four labs.
-    (function () {
-      var canvas = document.getElementById('bg');
-      var ctx = canvas.getContext('2d');
-      var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var colors = ['#8B5CF6', '#F59E0B', '#10B981', '#38BDF8', '#22D3EE', '#F472B6'];
-      var engine = Matter.Engine.create();
-      engine.gravity.y = 0.35;
-      var W = 0, H = 0, dpr = 1, pegs = [];
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      function resize() {
-        dpr = window.devicePixelRatio || 1;
-        W = window.innerWidth; H = window.innerHeight;
+    // Wordmark: one span per letter so they can rise in one after another
+    (function () {
+      var h1 = document.querySelector('.wordmark');
+      'AMPLITUDE'.split('').forEach(function (ch, i) {
+        var s = document.createElement('span');
+        s.textContent = ch;
+        s.setAttribute('aria-hidden', 'true');
+        s.style.animationDelay = (0.05 + i * 0.045) + 's';
+        h1.appendChild(s);
+      });
+      // Scale the wordmark so it spans the full width, like the Civic site's CIVIC
+      function fit() {
+        h1.style.fontSize = '20vw';
+        var avail = h1.parentElement.clientWidth - 2 * parseFloat(getComputedStyle(h1.parentElement).paddingLeft);
+        var size = parseFloat(getComputedStyle(h1).fontSize) * avail / h1.scrollWidth;
+        h1.style.fontSize = size + 'px';
+      }
+      setTimeout(function () { h1.classList.add('done'); }, 1800);
+      fit();
+      if (document.fonts) document.fonts.ready.then(fit);
+      window.addEventListener('resize', fit);
+    })();
+
+    // Rows and the statement fade up as they scroll in
+    (function () {
+      if (reduced || !('IntersectionObserver' in window)) return;
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          e.target.animate(
+            [{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }],
+            { duration: 900, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+          );
+          io.unobserve(e.target);
+        });
+      }, { threshold: 0.15 });
+      document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+    })();
+
+    // The string: a Matter.js chain under tension, pinned at both ends.
+    // Moving the pointer across it pushes the nearby links, and the wave travels along the chain.
+    (function () {
+      var Engine = Matter.Engine, Bodies = Matter.Bodies, Body = Matter.Body,
+          Composite = Matter.Composite, Constraint = Matter.Constraint;
+      var canvas = document.getElementById('string');
+      var ctx = canvas.getContext('2d');
+      var readout = document.getElementById('amp');
+      var engine = Engine.create();
+      engine.gravity.y = 0;
+
+      var W = 0, H = 0, restY = 0, nodes = [];
+      var pointer = { x: -1, y: -1, px: -1, py: -1, active: false };
+      var peak = 0, lastAutoPluck = 0;
+
+      function build() {
+        var dpr = window.devicePixelRatio || 1;
+        W = canvas.clientWidth; H = canvas.clientHeight; restY = H / 2;
         canvas.width = W * dpr; canvas.height = H * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        Matter.Composite.remove(engine.world, pegs);
-        pegs = [];
-        var gap = 90;
-        for (var row = 0; row * gap < H + gap; row++) {
-          for (var x = (row % 2) * gap / 2; x < W + gap; x += gap) {
-            pegs.push(Matter.Bodies.circle(x, 140 + row * gap, 3, { isStatic: true, restitution: 0.6 }));
-          }
+
+        Composite.clear(engine.world, false);
+        nodes = [];
+        var count = Math.max(40, Math.round(W / 18));
+        var gap = W / (count - 1);
+        for (var i = 0; i < count; i++) {
+          var end = i === 0 || i === count - 1;
+          nodes.push(Bodies.circle(i * gap, restY, 2, {
+            isStatic: end,
+            frictionAir: 0.018,
+            collisionFilter: { mask: 0 }   // links never collide with each other
+          }));
         }
-        Matter.Composite.add(engine.world, pegs);
+        var parts = nodes.slice();
+        for (var j = 1; j < count; j++) {
+          // Slightly shorter than the gap, so the string is under tension and waves travel
+          parts.push(Constraint.create({ bodyA: nodes[j - 1], bodyB: nodes[j], length: gap * 0.97, stiffness: 0.9 }));
+          // A very weak pull back to rest, so it always settles flat
+          parts.push(Constraint.create({ pointA: { x: j * gap, y: restY }, bodyB: nodes[j], length: 0, stiffness: 0.0015 }));
+        }
+        Composite.add(engine.world, parts);
       }
 
-      function spawn() {
-        var ball = Matter.Bodies.circle(Math.random() * W, -10, 2.5 + Math.random() * 2.5, {
-          restitution: 0.5, frictionAir: 0.02
+      function pluck(x, strength) {
+        nodes.forEach(function (n) {
+          if (n.isStatic) return;
+          var d = Math.abs(n.position.x - x);
+          if (d < 70) Body.applyForce(n, n.position, { x: 0, y: strength * n.mass * (1 - d / 70) });
         });
-        ball.color = colors[(Math.random() * colors.length) | 0];
-        Matter.Composite.add(engine.world, ball);
       }
+
+      canvas.addEventListener('pointermove', function (e) {
+        var r = canvas.getBoundingClientRect();
+        pointer.px = pointer.active ? pointer.x : e.clientX - r.left;
+        pointer.py = pointer.active ? pointer.y : e.clientY - r.top;
+        pointer.x = e.clientX - r.left; pointer.y = e.clientY - r.top;
+        pointer.active = true;
+        var vy = pointer.y - pointer.py;
+        // Only push when the pointer is near the line
+        if (Math.abs(pointer.y - restY) < 50) pluck(pointer.x, Math.max(-0.004, Math.min(0.004, vy * 0.0004)));
+      });
+      canvas.addEventListener('pointerleave', function () { pointer.active = false; });
+      canvas.addEventListener('pointerdown', function (e) {
+        var r = canvas.getBoundingClientRect();
+        pluck(e.clientX - r.left, -0.006);
+      });
 
       function draw() {
         ctx.clearRect(0, 0, W, H);
-        var glow = ctx.createRadialGradient(W * 0.8, 0, 0, W * 0.8, 0, W * 0.7);
-        glow.addColorStop(0, 'rgba(139,92,246,0.18)');
-        glow.addColorStop(1, 'rgba(7,10,18,0)');
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = 'rgba(255,255,255,0.07)';
-        pegs.forEach(function (p) {
-          ctx.beginPath(); ctx.arc(p.position.x, p.position.y, 2, 0, Math.PI * 2); ctx.fill();
-        });
-        ctx.globalCompositeOperation = 'lighter';
-        Matter.Composite.allBodies(engine.world).forEach(function (b) {
-          if (b.isStatic) return;
-          if (b.position.y > H + 40) { Matter.Composite.remove(engine.world, b); return; }
-          ctx.shadowColor = b.color; ctx.shadowBlur = 12;
-          ctx.fillStyle = b.color; ctx.globalAlpha = 0.55;
-          ctx.beginPath(); ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, Math.PI * 2); ctx.fill();
-        });
-        ctx.globalAlpha = 1; ctx.shadowBlur = 0;
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.beginPath();
+        ctx.moveTo(nodes[0].position.x, nodes[0].position.y);
+        for (var i = 1; i < nodes.length - 1; i++) {
+          var mx = (nodes[i].position.x + nodes[i + 1].position.x) / 2;
+          var my = (nodes[i].position.y + nodes[i + 1].position.y) / 2;
+          ctx.quadraticCurveTo(nodes[i].position.x, nodes[i].position.y, mx, my);
+        }
+        var last = nodes[nodes.length - 1].position;
+        ctx.lineTo(last.x, last.y);
+        ctx.lineWidth = 1.25;
+        ctx.strokeStyle = peak > 6 ? '#ff5a36' : '#f4f3ef';
+        ctx.stroke();
       }
 
-      var frame = 0;
-      function loop() {
-        if (!reduced && frame++ % 6 === 0) spawn();
-        Matter.Engine.update(engine, 1000 / 60);
+      function loop(t) {
+        if (!reduced && t - lastAutoPluck > 5200) {
+          lastAutoPluck = t;
+          if (!pointer.active) pluck(W * (0.2 + Math.random() * 0.6), -0.003);
+        }
+        Engine.update(engine, 1000 / 60);
+        var a = 0;
+        nodes.forEach(function (n) { a = Math.max(a, Math.abs(n.position.y - restY)); });
+        peak = a;
+        readout.textContent = a.toFixed(1);
         draw();
         requestAnimationFrame(loop);
       }
 
-      window.addEventListener('resize', resize);
-      resize();
-      loop();
+      var resizeTimer;
+      window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(build, 150);
+      });
+      build();
+      requestAnimationFrame(loop);
     })();
   </script>
 </body>
