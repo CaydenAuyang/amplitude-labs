@@ -3,28 +3,180 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hackathon Physics Game</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Amplitude Labs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background: #070A12;
+      color: #E8EDF6;
+      overflow-x: hidden;
+    }
+    #bg { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+    main { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 72px 24px 48px; }
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .14em;
+      text-transform: uppercase; color: #8A94A7;
+    }
+    h1 {
+      font-size: clamp(44px, 8vw, 96px); font-weight: 800; letter-spacing: -.04em; line-height: .95;
+      margin: 14px 0 18px;
+      background: linear-gradient(100deg, #E8EDF6 10%, #8B5CF6 45%, #22D3EE 75%, #F59E0B);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .lede { font-size: 19px; color: #A9B3C4; max-width: 640px; line-height: 1.5; margin: 0 0 48px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; }
+    .card {
+      --accent: #8B5CF6;
+      position: relative; display: flex; flex-direction: column; gap: 10px;
+      padding: 24px; min-height: 240px; border-radius: 16px; text-decoration: none; color: inherit;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+      overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute; inset: -40% -40% auto auto; width: 220px; height: 220px;
+      background: radial-gradient(circle, var(--accent), transparent 70%); opacity: .22;
+      transition: opacity .2s ease;
+    }
+    .card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 18px 50px -20px var(--accent); }
+    .card:hover::before { opacity: .4; }
+    .num { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); }
+    .pill {
+      align-self: flex-start; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+      color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+    .card h2 { margin: 6px 0 0; font-size: 26px; letter-spacing: -.02em; }
+    .card p { margin: 0; color: #A9B3C4; line-height: 1.5; font-size: 15px; flex: 1; }
+    .open { font-weight: 600; font-size: 14px; color: var(--accent); }
+    footer {
+      margin-top: 56px; display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between;
+      color: #8A94A7; font-size: 14px;
+    }
+    footer a { color: #A9B3C4; }
+    @media (max-width: 600px) { main { padding: 48px 16px 32px; } }
+  </style>
 </head>
 <body>
-  <header>
-    <h1 id="title">Hackathon Physics Game</h1>
-    <div id="hud">
-      <span>Score: <b id="score">0</b></span>
-      <span id="message">Arrow keys to move, drag things with the mouse</span>
-      <button id="reset">Reset</button>
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <main>
+    <div class="eyebrow">Team Amplitude · Pomfret Fall Hack-a-Thon 2026</div>
+    <h1>Amplitude Labs</h1>
+    <p class="lede">Four interactive physics-engine labs for four departments. Each one turns a real classroom idea into something you can grab, fling and watch unfold. Built with Matter.js.</p>
+
+    <div class="grid">
+      <a class="card" href="physics/" style="--accent:#8B5CF6">
+        <span class="num">01</span>
+        <span class="pill">Physics</span>
+        <h2>Orbit Lab</h2>
+        <p>Fling planets around a star and watch Newton's gravity and Kepler's three laws play out live.</p>
+        <span class="open">Open lab →</span>
+      </a>
+      <a class="card" href="music/" style="--accent:#F59E0B">
+        <span class="num">02</span>
+        <span class="pill">Music</span>
+        <h2>Gravity Piano</h2>
+        <p>A piano played by falling notes. Intervals, chords, scales and frequencies light up as it plays.</p>
+        <span class="open">Open lab →</span>
+      </a>
+      <a class="card" href="languages/" style="--accent:#10B981">
+        <span class="num">03</span>
+        <span class="pill">World Languages</span>
+        <h2>Lingo Drop</h2>
+        <p>Spanish and French word cards rain down. Sort them by meaning, gender and conjugation, and hear every word aloud.</p>
+        <span class="open">Open lab →</span>
+      </a>
+      <a class="card" href="stats/" style="--accent:#38BDF8">
+        <span class="num">04</span>
+        <span class="pill">Statistics</span>
+        <h2>Galton Lab</h2>
+        <p>Every ball is a coin-flip experiment. Watch the binomial become a bell curve, with the stats drawn on top.</p>
+        <span class="open">Open lab →</span>
+      </a>
     </div>
-  </header>
-  <div id="stage"></div>
 
-  <!-- Matter.js from a CDN, no install needed -->
+    <footer>
+      <span>Cayden, Christoph, Ronan and James H.</span>
+      <span>Matter.js 0.20 · <a href="https://github.com/CaydenAuyang/hackathon-physics">Source on GitHub</a></span>
+    </footer>
+  </main>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
+  <script>
+    // Background: glowing particles falling through a field of pegs, a small taste of all four labs.
+    (function () {
+      var canvas = document.getElementById('bg');
+      var ctx = canvas.getContext('2d');
+      var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var colors = ['#8B5CF6', '#F59E0B', '#10B981', '#38BDF8', '#22D3EE', '#F472B6'];
+      var engine = Matter.Engine.create();
+      engine.gravity.y = 0.35;
+      var W = 0, H = 0, dpr = 1, pegs = [];
 
-  <!-- Order matters: shared setup first, main.js last -->
-  <script src="js/config.js"></script>
-  <script src="js/world.js"></script>
-  <script src="js/controls.js"></script>
-  <script src="js/rules.js"></script>
-  <script src="js/main.js"></script>
+      function resize() {
+        dpr = window.devicePixelRatio || 1;
+        W = window.innerWidth; H = window.innerHeight;
+        canvas.width = W * dpr; canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        Matter.Composite.remove(engine.world, pegs);
+        pegs = [];
+        var gap = 90;
+        for (var row = 0; row * gap < H + gap; row++) {
+          for (var x = (row % 2) * gap / 2; x < W + gap; x += gap) {
+            pegs.push(Matter.Bodies.circle(x, 140 + row * gap, 3, { isStatic: true, restitution: 0.6 }));
+          }
+        }
+        Matter.Composite.add(engine.world, pegs);
+      }
+
+      function spawn() {
+        var ball = Matter.Bodies.circle(Math.random() * W, -10, 2.5 + Math.random() * 2.5, {
+          restitution: 0.5, frictionAir: 0.02
+        });
+        ball.color = colors[(Math.random() * colors.length) | 0];
+        Matter.Composite.add(engine.world, ball);
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        var glow = ctx.createRadialGradient(W * 0.8, 0, 0, W * 0.8, 0, W * 0.7);
+        glow.addColorStop(0, 'rgba(139,92,246,0.18)');
+        glow.addColorStop(1, 'rgba(7,10,18,0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = 'rgba(255,255,255,0.07)';
+        pegs.forEach(function (p) {
+          ctx.beginPath(); ctx.arc(p.position.x, p.position.y, 2, 0, Math.PI * 2); ctx.fill();
+        });
+        ctx.globalCompositeOperation = 'lighter';
+        Matter.Composite.allBodies(engine.world).forEach(function (b) {
+          if (b.isStatic) return;
+          if (b.position.y > H + 40) { Matter.Composite.remove(engine.world, b); return; }
+          ctx.shadowColor = b.color; ctx.shadowBlur = 12;
+          ctx.fillStyle = b.color; ctx.globalAlpha = 0.55;
+          ctx.beginPath(); ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, Math.PI * 2); ctx.fill();
+        });
+        ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+
+      var frame = 0;
+      function loop() {
+        if (!reduced && frame++ % 6 === 0) spawn();
+        Matter.Engine.update(engine, 1000 / 60);
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      window.addEventListener('resize', resize);
+      resize();
+      loop();
+    })();
+  </script>
 </body>
 </html>

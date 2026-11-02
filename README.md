@@ -1,42 +1,28 @@
-# Hackathon Physics Game
+# Amplitude Labs
 
-Our group's Matter.js project for the ADV Computer Coding Hack-a-Thon (Mr. Lake, D block).
+Team Amplitude's entry for the Pomfret School Fall Hack-a-Thon 2026: four interactive Matter.js labs, one per department.
 
-**Play it:** https://caydenauyang.github.io/hackathon-physics/
+**All labs:** https://caydenauyang.github.io/hackathon-physics/
 
-**Code:** https://github.com/CaydenAuyang/hackathon-physics
+| # | Lab | Department | Live link | Prompt |
+| --- | --- | --- | --- | --- |
+| 1 | Orbit Lab | Physics | https://caydenauyang.github.io/hackathon-physics/physics/ | [prompts/1-physics-orbit-lab.md](prompts/1-physics-orbit-lab.md) |
+| 2 | Gravity Piano | Music | https://caydenauyang.github.io/hackathon-physics/music/ | [prompts/2-music-gravity-piano.md](prompts/2-music-gravity-piano.md) |
+| 3 | Lingo Drop | World Languages (Spanish, French) | https://caydenauyang.github.io/hackathon-physics/languages/ | [prompts/3-languages-lingo-drop.md](prompts/3-languages-lingo-drop.md) |
+| 4 | Galton Lab | Statistics | https://caydenauyang.github.io/hackathon-physics/stats/ | [prompts/4-stats-galton-lab.md](prompts/4-stats-galton-lab.md) |
+
+Prompts go from hardest (1) to simplest (4).
 
 ## Team
 
-| Person | Role | Owns these files |
-| --- | --- | --- |
-| Cayden | Lead and integrator | `js/main.js`, `js/config.js`, `index.html` |
-| Teammate 1 | World builder | `js/world.js` |
-| Teammate 2 | Controls | `js/controls.js` |
-| Teammate 3 | Rules and look | `js/rules.js`, `style.css` |
+Cayden (lead), Christoph, Ronan, James H.
 
-**Rule #1: only edit your own file.** That way nobody overwrites anyone else.
+## How to build your lab
 
-## How to run it
+1. Accept the GitHub invite (email, or https://github.com/CaydenAuyang/hackathon-physics/invitations).
+2. Open your prompt file above, click the copy icon ("Copy raw file"), and paste it into Claude Code or Cursor's agent. It clones the repo, builds your lab in its own folder and pushes after each phase.
+3. No coding tool? Paste the prompt into claude.ai, download the file it gives you, then on github.com open your lab's folder and use Add file > Upload files to add it as `index.html`.
 
-- Easiest: open the GitHub Pages link above. It updates about a minute after each commit.
-- On your laptop: download the repo (green Code button, Download ZIP), unzip, double-click `index.html`.
+**Rule #1: only touch your own folder.** Four people push to this repo at the same time.
 
-## How to make a change (no git needed)
-
-1. Open the repo on github.com and click your file (for example `js/world.js`).
-2. Click the pencil icon to edit.
-3. Make your change, then click **Commit changes**, write a short message like "add ramp", and commit to `main`.
-4. Wait a minute, refresh the Pages link, and check it still works.
-
-If it breaks, open the browser console (right-click, Inspect, Console) and read the red error. Tell Cayden if you're stuck for more than 5 minutes.
-
-## How the code fits together
-
-- `config.js` makes one shared object called `Game` (size, colors, score, helpers).
-- `world.js` adds bodies: walls, platforms, boxes, the player, the goal.
-- `controls.js` handles keyboard and mouse.
-- `rules.js` listens for collisions and changes the score or message.
-- `main.js` starts Matter.js and calls the three functions above.
-
-Matter.js docs: https://brm.io/matter-js/docs/ and demos: https://brm.io/matter-js/demo/
+Each lab is one self-contained `index.html` using Matter.js 0.20.0 from cdnjs. No build step.
