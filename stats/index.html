@@ -6,7 +6,7 @@
 <title>Galton Lab · Amplitude Labs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Host+Grotesk:wght@300;400&family=Martian+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #070A12;
@@ -381,6 +381,60 @@
   @media (prefers-reduced-motion: reduce) {
     .bar-btn, .btn, .scenario, .seg button, .switch, .switch::after, #side { transition: none; }
   }
+
+  /* ---------- Editorial restyle to match the Amplitude Labs hub (ink, paper, hairlines, one accent) ---------- */
+  :root {
+    --bg: #0d0d0c; --text: #f4f3ef; --muted: rgba(244,243,239,.55);
+    --glass: transparent; --line: rgba(244,243,239,.14); --hot: #ff5a36;
+  }
+  body { font-family: 'Host Grotesk', 'Helvetica Neue', Arial, sans-serif; font-weight: 300; background: #0d0d0c; }
+  .num, kbd, .formula { font-family: 'Martian Mono', ui-monospace, monospace; }
+  header, #side, .panel, .chart, .modal, #caption, #pathline, #empirChip, #presentStats { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  header { background: #0d0d0c; padding: 0 20px; gap: 16px; }
+  .back { font-weight: 400; }
+  .lab-name { font-weight: 400; font-size: 19px; }
+  .pill { font-family: 'Martian Mono', monospace; font-weight: 400; font-size: 10px; letter-spacing: .1em; color: var(--muted); background: none; border-color: var(--line); }
+  .bar-btn, .btn { border-radius: 999px; background: none; font-family: 'Martian Mono', monospace; font-weight: 400; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; }
+  .bar-btn:hover, .btn:hover, .bar-btn[aria-pressed="true"] { background: #f4f3ef; color: #0d0d0c; border-color: #f4f3ef; }
+  kbd { border-radius: 3px; border-bottom-width: 1px; }
+  .bar-btn:hover kbd, .bar-btn[aria-pressed="true"] kbd { color: #0d0d0c; border-color: rgba(13,13,12,.3); }
+  #caption, #pathline, #empirChip, #presentStats { background: #0d0d0c; border-color: var(--line); }
+  #caption { font-size: 14px; }
+  #side { background: #0d0d0c; padding: 0; }
+  .panel { background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; margin: 0; }
+  .ph { font-family: 'Martian Mono', monospace; font-weight: 400; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; padding: 16px 20px; }
+  .pb { padding: 0 20px 18px; }
+  .scenario { border-radius: 0; border: 0; border-top: 1px solid var(--line); padding: 10px 0; font-weight: 400; font-size: 15px; margin: 0; }
+  .scenario:hover { background: none; color: var(--hot); }
+  .scenario.on { background: none; color: var(--hot); }
+  .ctl-label { font-family: 'Martian Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 2px 0 8px; }
+  .seg button { border-radius: 999px; background: none; font-family: 'Martian Mono', monospace; font-size: 12px; }
+  .seg button:hover { background: #f4f3ef; color: #0d0d0c; border-color: #f4f3ef; }
+  .queue { margin-bottom: 14px; }
+  .slider-top label, .switch-row, .layer .name { font-size: 14px; }
+  .slider-top .num { color: var(--text); font-size: 12px; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 1px; background: rgba(244,243,239,.35); }
+  input[type="range"]::-moz-range-track { height: 1px; background: rgba(244,243,239,.35); }
+  input[type="range"]::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: -5.5px; background: #f4f3ef; border: 0; box-shadow: none; }
+  input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; background: #f4f3ef; border: 0; }
+  .switch { background: rgba(244,243,239,.14); border-color: var(--line); }
+  .switch[aria-checked="true"] { background: var(--hot); border-color: var(--hot); }
+  .stats div { background: none; border-radius: 0; border-top: 1px solid var(--line); padding: 8px 0; }
+  .stats dd { font-family: 'Martian Mono', monospace; font-size: 14px; }
+  .pb h3 { font-family: 'Martian Mono', monospace; font-weight: 400; font-size: 10px; color: var(--hot); }
+  .pb p, .pb li { color: var(--text); font-size: 14px; }
+  .formula { background: none; border-left: 1px solid var(--hot); border-radius: 0; }
+  .chart { background: none; border-radius: 0; border-color: var(--line); }
+  .chart.hot { border-color: var(--hot); box-shadow: none; }
+  .modal { background: #0d0d0c; border-radius: 0; box-shadow: none; padding: 36px; width: min(500px, 100%); }
+  .modal h2 { font-weight: 300; font-size: 64px; letter-spacing: -.045em; line-height: .95; margin: 14px 0 14px; }
+  .modal .lede { color: var(--text); font-size: 18px; }
+  ol.try { list-style: none; margin: 0 0 22px; padding: 0; counter-reset: s; }
+  ol.try li { counter-increment: s; display: grid; grid-template-columns: 28px 1fr; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); color: var(--text); }
+  ol.try li::before { content: counter(s, decimal-leading-zero); font-family: 'Martian Mono', monospace; font-size: 10.5px; color: var(--hot); padding-top: 3px; }
+  ol.try b { font-weight: 400; color: var(--hot); }
+  .primary { width: 100%; background: #f4f3ef; color: #0d0d0c; font-family: 'Martian Mono', monospace; font-weight: 400; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+  .primary:hover { background: var(--hot); filter: none; }
 </style>
 </head>
 <body>
@@ -409,12 +463,11 @@
           <div class="modal">
             <div class="pill">Statistics</div>
             <h2>Galton Lab</h2>
-            <p class="lede">Every falling ball is a coin flip. The bins pile up into the binomial distribution, and a bell curve appears on top.</p>
-            <ul>
-              <li>Drop 1,000 balls at p = 0.5 and watch a bell curve grow in the bins.</li>
-              <li>Drag p down to 0.25 and see the stack lean left.</li>
-              <li>Turn on the normal curve and the 68–95–99.7 bands.</li>
-            </ul>
+            <p class="lede">Every ball flips a coin at each peg. Drop enough of them and the bins form a bell curve.</p>
+            <ol class="try">
+              <li><span>Press <b>1000</b> under Drop balls and watch the shape build.</span></li>
+              <li><span>Pick a scenario on the right to see a different idea.</span></li>
+            </ol>
             <button class="primary" id="startBtn" type="button">Start</button>
           </div>
         </div>
@@ -477,6 +530,14 @@
       <section class="panel" data-open="true" id="sec-controls">
         <button class="ph" type="button" aria-expanded="true">Controls <span class="chev">▾</span></button>
         <div class="pb">
+          <div class="ctl-label">Drop balls</div>
+          <div class="seg" role="group" aria-label="Drop balls">
+            <button type="button" data-drop="1" aria-label="Drop 1 ball">1</button>
+            <button type="button" data-drop="10" aria-label="Drop 10 balls">10</button>
+            <button type="button" data-drop="100" aria-label="Drop 100 balls">100</button>
+            <button type="button" data-drop="1000" aria-label="Drop 1000 balls">1000</button>
+          </div>
+          <div class="queue num" id="queueLabel">Queue empty</div>
           <div class="slider">
             <div class="slider-top"><label for="rowsSlider">Rows</label><span class="num" id="rowsOut">12</span></div>
             <input id="rowsSlider" type="range" min="4" max="16" step="1" value="12" aria-label="Number of peg rows">
@@ -501,18 +562,11 @@
             <span>Pure physics — no nudge</span>
             <button class="switch" id="pureSwitch" type="button" role="switch" aria-checked="false" aria-label="Pure physics, turn the coin-flip nudge off"></button>
           </div>
-          <div class="seg" role="group" aria-label="Drop balls">
-            <button type="button" data-drop="1" aria-label="Drop 1 ball">1</button>
-            <button type="button" data-drop="10" aria-label="Drop 10 balls">10</button>
-            <button type="button" data-drop="100" aria-label="Drop 100 balls">100</button>
-            <button type="button" data-drop="1000" aria-label="Drop 1000 balls">1000</button>
-          </div>
-          <div class="queue num" id="queueLabel">Queue empty</div>
           <button class="btn" id="resetBtn" type="button" aria-label="Reset the board and the data">Reset</button>
         </div>
       </section>
-      <section class="panel" data-open="true" id="sec-layers">
-        <button class="ph" type="button" aria-expanded="true">Layers <span class="chev">▾</span></button>
+      <section class="panel" data-open="false" id="sec-layers">
+        <button class="ph" type="button" aria-expanded="false">Layers <span class="chev">▾</span></button>
         <div class="pb" id="layerList">
           <div class="layer"><span class="name">Board</span><span class="hint">always</span><button class="switch" type="button" role="switch" aria-checked="true" aria-disabled="true" disabled aria-label="Board layer, always on"></button></div>
           <div class="layer"><span class="name">Histogram</span><kbd>H</kbd><button class="switch" type="button" role="switch" data-layer="hist" aria-checked="true" aria-label="Toggle histogram"></button></div>
@@ -523,8 +577,8 @@
           <div class="layer"><span class="name">X-ray</span><kbd>X</kbd><button class="switch" type="button" role="switch" data-layer="xray" aria-checked="false" aria-label="Toggle Matter.js x-ray"></button></div>
         </div>
       </section>
-      <section class="panel" data-open="true" id="sec-live">
-        <button class="ph" type="button" aria-expanded="true">Live data <span class="chev">▾</span></button>
+      <section class="panel" data-open="false" id="sec-live">
+        <button class="ph" type="button" aria-expanded="false">Live data <span class="chev">▾</span></button>
         <div class="pb">
           <dl class="stats">
             <div><dt>N</dt><dd class="num" id="stN">0</dd></div>
@@ -541,8 +595,8 @@
           <button class="btn" id="copyBtn" type="button" aria-label="Copy bin counts as CSV">Copy counts as CSV</button>
         </div>
       </section>
-      <section class="panel" data-open="true" id="sec-lesson">
-        <button class="ph" type="button" aria-expanded="true">Lesson <span class="chev">▾</span></button>
+      <section class="panel" data-open="false" id="sec-lesson">
+        <button class="ph" type="button" aria-expanded="false">Lesson <span class="chev">▾</span></button>
         <div class="pb">
           <h3>Predict</h3>
           <p>Before you drop 1,000 balls at p = 0.5, sketch the shape you expect. Mark the bin you think will be tallest.</p>
