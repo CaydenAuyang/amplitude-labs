@@ -5,24 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lingo Drop · Amplitude Labs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #070A12; --text: #E8EDF6; --muted: #8A94A7;
     --glass: rgba(255,255,255,0.04); --line: rgba(255,255,255,0.08);
-    --accent: #F97316; --accent2: #FACC15; --good: #10B981; --bad: #F43F5E;
-    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --accent: #F97316; --accent2: #FACC15;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; overflow: hidden; }
   body {
     font-family: Inter, system-ui, sans-serif; color: var(--text); background: var(--bg);
-    background-image: radial-gradient(1000px 640px at 32% 38%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%),
-                      radial-gradient(700px 480px at 88% 100%, color-mix(in srgb, var(--accent2) 10%, transparent), transparent 70%);
+    background-image: radial-gradient(1000px 640px at 32% 38%, rgba(249,115,22,0.18), transparent 70%),
+                      radial-gradient(700px 480px at 88% 100%, rgba(250,204,21,0.10), transparent 70%);
     font-size: 14px; -webkit-font-smoothing: antialiased;
   }
-  button, textarea { font: inherit; color: inherit; }
-  .mono { font-family: var(--mono); }
+  button { font: inherit; color: inherit; }
   .topbar {
     height: 56px; display: flex; align-items: center; gap: 14px; padding: 0 16px;
     border-bottom: 1px solid var(--line); background: rgba(7,10,18,0.6);
@@ -32,136 +30,29 @@
   .back:hover { color: var(--text); background: rgba(255,255,255,0.06); }
   .divider { width: 1px; height: 22px; background: var(--line); }
   .labname { font-weight: 700; font-size: 17px; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; }
-  .logo { width: 22px; height: 16px; border-radius: 4px; background: linear-gradient(160deg, #fff, var(--accent2) 30%, var(--accent)); box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 65%, transparent); }
-  .pill { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; color: var(--accent2); border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
-  .spacer { flex: 1; }
-  .tbtn {
-    display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 10px;
-    background: var(--glass); border: 1px solid var(--line); cursor: pointer; font-size: 13px; font-weight: 500;
-    transition: background .18s, border-color .18s, transform .18s;
-  }
-  .tbtn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.16); }
-  .tbtn:active { transform: translateY(1px); }
-  .tbtn.on { border-color: color-mix(in srgb, var(--accent) 70%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
-  kbd { font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,0.08); border: 1px solid var(--line); color: var(--muted); }
+  .logo { width: 22px; height: 16px; border-radius: 4px; background: linear-gradient(160deg, #fff, var(--accent2) 30%, var(--accent)); box-shadow: 0 0 14px rgba(249,115,22,0.65); }
+  .pill { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; color: var(--accent2); border: 1px solid rgba(249,115,22,0.55); background: rgba(249,115,22,0.16); }
   .app { position: absolute; top: 56px; left: 0; right: 0; bottom: 0; display: flex; overflow: hidden; }
   #stage { position: relative; flex: 1; min-width: 0; overflow: hidden; touch-action: none; cursor: grab; }
   #stage.grabbing { cursor: grabbing; }
-  #stage canvas { position: absolute; left: 0; top: 0; }
-  #xray { pointer-events: none; visibility: hidden; }
-  #xray.on { visibility: visible; }
+  #art { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
   #sidebar {
-    width: 340px; flex: none; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px;
-    border-left: 1px solid var(--line); background: rgba(7,10,18,0.35); transition: margin-right .25s ease, opacity .25s;
-    scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.12) transparent;
+    width: 340px; flex: none; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+    border-left: 1px solid var(--line); background: rgba(7,10,18,0.35);
   }
-  body.present #sidebar { margin-right: -340px; opacity: 0; pointer-events: none; }
-  .sec { background: var(--glass); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); flex: none; }
-  .sec-h { width: 100%; display: flex; align-items: center; justify-content: space-between; background: none; border: 0; padding: 12px 14px; cursor: pointer; font-weight: 600; font-size: 13px; letter-spacing: .02em; border-radius: 14px; transition: background .18s; }
-  .sec-h:hover { background: rgba(255,255,255,0.03); }
-  .sec-h .chev { color: var(--muted); transition: transform .2s; font-size: 11px; }
-  .sec.closed .chev { transform: rotate(-90deg); }
-  .sec-b { padding: 0 14px 14px; }
-  .sec.closed .sec-b { display: none; }
-  .muted { color: var(--muted); }
-  .small { font-size: 12px; line-height: 1.5; }
-  .scen { display: grid; gap: 6px; }
-  .scen button {
-    display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 10px; border-radius: 10px; cursor: pointer;
-    background: rgba(255,255,255,0.02); border: 1px solid var(--line); transition: background .18s, border-color .18s;
+  .sec { background: var(--glass); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 14px; }
+  .sec h2 { margin: 0 0 6px; font-size: 13px; letter-spacing: .02em; }
+  .muted { color: var(--muted); font-size: 12.5px; line-height: 1.5; margin: 0 0 12px; }
+  .kv { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; font-size: 13px; margin-bottom: 14px; }
+  .kv b { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; text-align: right; }
+  .btn {
+    width: 100%; height: 38px; border-radius: 10px; border: 0; cursor: pointer; font-weight: 600; font-size: 14px;
+    color: #fff; background: linear-gradient(135deg, #F97316, #C2410C);
+    transition: filter .18s, transform .18s;
   }
-  .scen button:hover { background: rgba(255,255,255,0.06); }
-  .scen button.on { border-color: color-mix(in srgb, var(--accent) 65%, transparent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
-  .scen .k { font-family: var(--mono); font-size: 11px; width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; background: rgba(255,255,255,0.06); color: var(--muted); flex: none; }
-  .scen .t { font-size: 13px; font-weight: 500; }
-  .ctl { margin: 10px 0 14px; }
-  .ctl-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; font-size: 12.5px; }
-  .ctl-top .v { font-family: var(--mono); font-size: 12px; color: var(--accent2); }
-  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; cursor: pointer; margin: 0; }
-  input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) var(--p, 50%), rgba(255,255,255,0.1) var(--p, 50%)); }
-  input[type=range]::-moz-range-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) var(--p, 50%), rgba(255,255,255,0.1) var(--p, 50%)); }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; margin-top: -6px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent), 0 2px 8px rgba(0,0,0,.5); transition: box-shadow .18s, transform .18s; }
-  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent); }
-  input[type=range]:hover::-webkit-slider-thumb { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 45%, transparent); }
-  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.12); }
-  input[type=range]:focus-visible { outline: none; }
-  .seg { display: flex; padding: 3px; gap: 2px; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--line); }
-  .seg button { flex: 1; height: 28px; border: 0; background: transparent; border-radius: 7px; cursor: pointer; font-family: var(--mono); font-size: 12px; color: var(--muted); transition: background .18s, color .18s; }
-  .seg button:hover { color: var(--text); background: rgba(255,255,255,0.05); }
-  .seg button.on { color: #fff; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 80%, #000), color-mix(in srgb, var(--accent2) 55%, #000)); }
-  .row { display: flex; gap: 8px; margin-top: 12px; }
-  .btn { flex: 1; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); cursor: pointer; font-size: 12.5px; font-weight: 500; transition: background .18s, border-color .18s, transform .18s; }
-  .btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,.18); }
+  .btn:hover { filter: brightness(1.08); }
   .btn:active { transform: translateY(1px); }
-  .btn.primary { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #000)); border-color: transparent; color: #fff; font-weight: 600; }
-  .btn.primary:hover { filter: brightness(1.08); }
-  .tog { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 4px; background: none; border: 0; cursor: pointer; text-align: left; border-radius: 8px; transition: background .18s; }
-  .tog:hover { background: rgba(255,255,255,0.03); }
-  .tog .sw { width: 32px; height: 18px; border-radius: 9px; background: rgba(255,255,255,0.12); position: relative; transition: background .2s; flex: none; }
-  .tog .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #cfd6e4; transition: transform .2s, background .2s; }
-  .tog[aria-checked=true] .sw { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
-  .tog[aria-checked=true] .sw::after { transform: translateX(14px); background: #fff; }
-  .tog[aria-disabled=true] { opacity: .55; cursor: default; }
-  .tog .lbl { flex: 1; font-size: 13px; }
-  .tog .lbl small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 1px; }
-  .kv { display: grid; grid-template-columns: 1fr auto; gap: 5px 10px; font-size: 12.5px; }
-  .kv .val { font-family: var(--mono); font-size: 12px; text-align: right; }
-  .binrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; margin-top: 8px; font-size: 11.5px; }
-  .binrow .bar { grid-column: 1 / -1; height: 4px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
-  .binrow .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 4px; }
-  .sub { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 12px 0 8px; font-weight: 600; }
-  textarea {
-    width: 100%; min-height: 108px; resize: vertical; border-radius: 10px; padding: 8px 10px;
-    background: rgba(0,0,0,0.28); border: 1px solid var(--line); color: var(--text); line-height: 1.45;
-    font-family: var(--mono); font-size: 11px;
-  }
-  textarea:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
-  .card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; background: rgba(255,255,255,0.02); }
-  .card h4 { margin: 0 0 6px; font-size: 13px; }
-  .card p { margin: 0; font-size: 12px; line-height: 1.5; color: #C5CCDA; }
-  ul.mods { list-style: none; padding: 0; margin: 0; font-size: 12px; line-height: 1.45; }
-  ul.mods li { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.04); color: #C5CCDA; }
-  ul.mods code { font-family: var(--mono); color: var(--accent2); font-size: 11.5px; }
-  .hud { position: absolute; pointer-events: none; z-index: 5; }
-  #hudTL { left: 16px; top: 14px; max-width: 62%; }
-  #caption { font-size: 15px; font-weight: 600; letter-spacing: -.005em; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
-  #caption small { display: block; font-weight: 400; color: var(--muted); font-size: 12.5px; margin-top: 3px; }
-  #hudTR { right: 16px; top: 14px; text-align: right; font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.65; }
-  #hudTR b { color: var(--text); font-weight: 500; }
-  #hudB { left: 50%; bottom: 14px; transform: translateX(-50%); font-size: 12px; color: var(--muted); background: rgba(7,10,18,.55); border: 1px solid var(--line); padding: 6px 12px; border-radius: 999px; backdrop-filter: blur(10px); white-space: nowrap; }
-  body.present #caption { font-size: 28px; }
-  body.present #caption small { font-size: 18px; }
-  body.present #hudTR { font-size: 20px; }
-  body.present #hudB { font-size: 16px; }
-  #toast { position: absolute; left: 50%; top: 72px; transform: translate(-50%, -8px); opacity: 0; transition: opacity .22s, transform .22s; background: rgba(7,10,18,.88); border: 1px solid color-mix(in srgb, var(--bad) 70%, transparent); padding: 10px 14px; border-radius: 12px; font-size: 13.5px; z-index: 6; pointer-events: none; max-width: min(520px, calc(100% - 32px)); text-align: center; line-height: 1.4; }
-  #toast.show { opacity: 1; transform: translate(-50%, 0); }
-  #toast.ok { border-color: color-mix(in srgb, var(--good) 65%, transparent); }
-  .overlay { position: absolute; inset: 0; display: grid; place-items: center; z-index: 30; background: rgba(7,10,18,.35); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; pointer-events: none; transition: opacity .25s; }
-  .overlay.show { opacity: 1; pointer-events: auto; }
-  .modal { width: min(540px, calc(100% - 32px)); max-height: calc(100% - 40px); overflow: auto; background: rgba(14,18,30,.86); border: 1px solid rgba(255,255,255,.1); border-radius: 18px; padding: 26px 26px 22px; box-shadow: 0 30px 80px -20px rgba(0,0,0,.8); transform: translateY(8px) scale(.98); transition: transform .25s ease; }
-  .overlay.show .modal { transform: none; }
-  .modal.intro { border-color: rgba(16,185,129,.45); box-shadow: 0 30px 80px -20px rgba(0,0,0,.8), 0 0 80px -28px rgba(16,185,129,.7); }
-  .modal h2 { margin: 6px 0 8px; font-size: 30px; letter-spacing: -.03em; }
-  .modal .eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent2); }
-  .modal.intro .eyebrow { color: #34D399; }
-  .modal p.lead { color: #B8C1D1; line-height: 1.55; margin: 0 0 14px; }
-  .modal ul.try { margin: 0 0 18px; padding: 0; list-style: none; }
-  .modal ul.try li { padding: 8px 0 8px 26px; position: relative; color: #D5DBE6; line-height: 1.45; border-top: 1px solid rgba(255,255,255,.05); }
-  .modal ul.try li::before { content: ''; position: absolute; left: 2px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, #10B981 62%); box-shadow: 0 0 10px #10B981; }
-  .modal .btn { height: 42px; font-size: 14px; }
-  .intro .btn.primary { background: linear-gradient(135deg, #10B981, #047857); }
-  .keys { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 13px; align-items: center; }
-  .keys kbd { justify-self: start; font-size: 12px; color: var(--text); }
-  .sum-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
-  .sum-stats div { background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 10px; padding: 8px; text-align: center; }
-  .sum-stats b { display: block; font-family: var(--mono); font-size: 16px; font-weight: 600; }
-  .sum-stats span { color: var(--muted); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; }
-  #review { margin: 0 0 8px; padding: 0; list-style: none; max-height: 180px; overflow: auto; }
-  #review li { padding: 6px 0; border-top: 1px solid rgba(255,255,255,.06); font-size: 12.5px; color: #D5DBE6; }
-  #layersPop { position: absolute; right: 16px; top: 62px; width: 280px; z-index: 25; padding: 8px; background: rgba(14,18,30,.92); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; backdrop-filter: blur(14px); box-shadow: 0 20px 50px -20px rgba(0,0,0,.8); opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .18s, transform .18s; }
-  #layersPop.show { opacity: 1; transform: none; pointer-events: auto; }
-  .err { color: #FDA4AF; font-size: 12px; min-height: 1.2em; margin: 6px 0 0; }
-  @media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; animation: none !important; } }
+  @media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; } }
 </style>
 </head>
 <body>
@@ -170,562 +61,97 @@
   <span class="divider"></span>
   <span class="labname"><span class="logo" aria-hidden="true"></span>Lingo Drop</span>
   <span class="pill">World Languages</span>
-  <span class="spacer"></span>
-  <button class="tbtn" id="btnLayers" aria-label="Show layers" aria-expanded="false">Layers</button>
-  <button class="tbtn" id="btnPresent" aria-label="Toggle present mode" aria-pressed="false">Present <kbd>P</kbd></button>
-  <button class="tbtn" id="btnHelp" aria-label="Show help and shortcuts">Help <kbd>?</kbd></button>
-  <div id="layersPop" role="dialog" aria-label="Layers"></div>
 </header>
 <div class="app">
-  <div id="stage">
-    <canvas id="art"></canvas>
-    <canvas id="xray" aria-hidden="true"></canvas>
-    <div class="hud" id="hudTL"><div id="caption"></div></div>
-    <div class="hud" id="hudTR"></div>
-    <div class="hud" id="hudB">Grab a card and fling it into the matching bin</div>
-    <div id="toast" role="status" aria-live="polite"></div>
-    <div class="overlay" id="intro">
-      <div class="modal intro" role="dialog" aria-labelledby="introTitle">
-        <div class="eyebrow">Amplitude Labs · World Languages</div>
-        <h2 id="introTitle">Lingo Drop</h2>
-        <p class="lead">Spanish and French cards tumble into a tray. Fling each one into the right bin before the pile overflows.</p>
-        <ul class="try">
-          <li><b>Fling a card</b> into the matching bin. It speaks as you pick it up.</li>
-          <li><b>Switch the scenario</b> to themes or present-tense verbs, then survive a 60-second round.</li>
-          <li><b>Press E</b> for Heat, so the class can see which bin is the hard one.</li>
-        </ul>
-        <button class="btn primary" id="btnStart" aria-label="Start the round" style="width:100%">Start</button>
-      </div>
-    </div>
-    <div class="overlay" id="help">
-      <div class="modal" role="dialog" aria-labelledby="helpTitle">
-        <div class="eyebrow">Shortcuts</div>
-        <h2 id="helpTitle">Help</h2>
-        <div class="keys" id="keyList"></div>
-        <div class="row"><button class="btn" id="btnHelpClose" aria-label="Close help">Close</button></div>
-      </div>
-    </div>
-    <div class="overlay" id="summary">
-      <div class="modal" role="dialog" aria-labelledby="sumTitle">
-        <div class="eyebrow" id="sumEyebrow">Round</div>
-        <h2 id="sumTitle">Round complete</h2>
-        <div class="sum-stats">
-          <div><b id="sumAcc">—</b><span>Accuracy</span></div>
-          <div><b id="sumTime">—</b><span>Time</span></div>
-          <div><b id="sumStreak">—</b><span>Best streak</span></div>
-          <div><b id="sumSorted">—</b><span>Sorted</span></div>
-        </div>
-        <div class="sub">Words to review</div>
-        <ul id="review"></ul>
-        <div class="row">
-          <button class="btn" id="btnCopy" aria-label="Copy results">Copy results</button>
-          <button class="btn primary" id="btnAgain" aria-label="Play again">Play again</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div id="stage"><canvas id="art"></canvas></div>
   <aside id="sidebar" aria-label="Lab controls">
-    <section class="sec" data-sec="scenarios">
-      <button class="sec-h" aria-label="Toggle Scenarios section">Scenarios <span class="chev">▼</span></button>
-      <div class="sec-b">
-        <div class="scen" id="scenList"></div>
-        <div id="listBox">
-          <div class="sub">My list</div>
-          <p class="small muted" style="margin:0 0 8px">One card per line: <span class="mono">word | bin | hint</span>. Two to six bins.</p>
-          <textarea id="listText" aria-label="Teacher word list" spellcheck="false"></textarea>
-          <div class="seg" id="listLang" role="group" aria-label="Voice for my list" style="margin-top:8px">
-            <button type="button" data-lang="es" class="on" aria-pressed="true">Español</button>
-            <button type="button" data-lang="fr" aria-pressed="false">Français</button>
-          </div>
-          <p class="err" id="listErr"></p>
-        </div>
+    <section class="sec">
+      <h2>Español · Gender</h2>
+      <p class="muted">Cards show the noun without its article. Fling each one into el (masculine) or la (feminine).</p>
+      <div class="kv">
+        <span>Score</span><b id="score">0</b>
+        <span>Sorted</span><b id="sorted">0</b>
       </div>
-    </section>
-    <section class="sec" data-sec="controls">
-      <button class="sec-h" aria-label="Toggle Controls section">Controls <span class="chev">▼</span></button>
-      <div class="sec-b">
-        <div class="ctl">
-          <div class="ctl-top"><span>Round</span><span class="v" id="timeV">60s</span></div>
-          <div class="seg" id="timeSeg" role="group" aria-label="Round length"></div>
-        </div>
-        <div class="ctl">
-          <div class="ctl-top"><span>Speed</span><span class="v" id="speedV">1×</span></div>
-          <div class="seg" id="speedSeg" role="group" aria-label="Simulation speed"></div>
-        </div>
-        <div class="ctl">
-          <div class="ctl-top"><span>Gravity</span><span class="v" id="gravV">1.00×</span></div>
-          <input type="range" id="gravS" min="0.45" max="1.8" step="0.05" value="1" aria-label="Gravity multiplier">
-        </div>
-        <div id="speechBox">
-          <button class="tog" id="speechTog" role="switch" aria-checked="true" aria-label="Toggle spoken words">
-            <span class="sw"></span><span class="lbl">Speak cards<small>Native-accent voice on pickup and on a miss</small></span>
-          </button>
-          <div class="ctl" style="margin-bottom:4px">
-            <div class="ctl-top"><span>Speech rate</span><span class="v" id="rateV">0.95</span></div>
-            <input type="range" id="rateS" min="0.7" max="1.15" step="0.05" value="0.95" aria-label="Speech rate">
-          </div>
-        </div>
-        <div class="row">
-          <button class="btn" id="btnShake" aria-label="Shake the tray">Shake</button>
-          <button class="btn primary" id="btnGo" aria-label="Start round">Start round</button>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <button class="btn" id="btnEnd" aria-label="End the round">End round</button>
-        </div>
-      </div>
-    </section>
-    <section class="sec" data-sec="layers">
-      <button class="sec-h" aria-label="Toggle Layers section">Layers <span class="chev">▼</span></button>
-      <div class="sec-b" id="layerList"></div>
-    </section>
-    <section class="sec" data-sec="live">
-      <button class="sec-h" aria-label="Toggle Live data section">Live data <span class="chev">▼</span></button>
-      <div class="sec-b">
-        <div class="kv">
-          <span>Score</span><span class="val" id="lvScore">0</span>
-          <span>Combo</span><span class="val" id="lvCombo">×1</span>
-          <span>Accuracy</span><span class="val" id="lvAcc">—</span>
-          <span>Cards sorted</span><span class="val" id="lvSorted">0</span>
-          <span>Best streak</span><span class="val" id="lvBest">0</span>
-        </div>
-        <div class="sub">Accuracy per bin</div>
-        <div id="lvBins" class="small muted">Start a round to fill the bins.</div>
-      </div>
-    </section>
-    <section class="sec" data-sec="lesson">
-      <button class="sec-h" aria-label="Toggle Lesson section">Lesson <span class="chev">▼</span></button>
-      <div class="sec-b" id="lessonBox"></div>
-    </section>
-    <section class="sec closed" data-sec="hood">
-      <button class="sec-h" aria-label="Toggle Under the hood section">Under the hood <span class="chev">▼</span></button>
-      <div class="sec-b"><ul class="mods" id="modList"></ul></div>
+      <button class="btn" id="btnReset" type="button" aria-label="Reset the round">Reset</button>
     </section>
   </aside>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
 <script>
-/* Tunable numbers for the whole lab. Change these, reload, and the sim follows. */
+/* Tunable numbers. Change one, reload, and the sim follows. */
 const CONFIG = {
   worldW: 1600,
   worldH: 900,
-  bound: 44,          /* outer wall thickness */
-  wall: 18,           /* bin wall thickness */
+  bound: 44,
+  wall: 18,
   colW: 308,
-  gap: 22,            /* air between the tray and the bins */
-  lipTall: 70,        /* lip height when a side has one big bin */
-  lipShort: 46,       /* lip height when bins are stacked */
-  dangerY: 248,       /* pile above this line (smaller y) is danger */
-  dangerMs: 3000,
-  spawnStart: 2000,   /* ms between drops at the start of a round */
-  spawnMin: 780,
-  spawnRamp: 26,      /* ms shaved off the interval each second */
-  practiceSpawn: 2400,
-  maxCards: 18,
-  previewCards: 7,
+  gap: 22,
+  lip: 70,
   cardH: 76,
-  cardHSub: 98,
   chamfer: 12,
   spawnY: 158,
-  fling: 1.05,        /* release velocity = pointer speed (px per ms) times this */
+  spawnEvery: 1600,
+  maxCards: 10,
+  fling: 1.05,
   grabStiff: 0.5,
   grabDamp: 0.12,
-  gravity: 1,
-  shake: 7,           /* random speed kick, px per ms-scale via setVelocity */
   points: 100,
-  comboMax: 8,
-  particleN: 22,
   step: 1000 / 60
 };
 
-const { Engine, Bodies, Body, Composite, Constraint, Events, Query, Render, Sleeping, Vector } = Matter;
+const { Engine, World, Bodies, Body, Composite, Constraint, Events, Query, Sleeping, Vector } = Matter;
 
-const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const $ = id => document.getElementById(id);
-
-const ES_SUBJ = [
-  { id: 'yo', label: 'yo' },
-  { id: 'tu', label: 'tú' },
-  { id: 'el', label: 'él/ella/usted' },
-  { id: 'nos', label: 'nosotros' },
-  { id: 'vos', label: 'vosotros' },
-  { id: 'ellos', label: 'ellos/ustedes' }
-];
-const FR_SUBJ = [
-  { id: 'je', label: 'je' },
-  { id: 'tu', label: 'tu' },
-  { id: 'il', label: 'il/elle/on' },
-  { id: 'nous', label: 'nous' },
-  { id: 'vous', label: 'vous' },
-  { id: 'ils', label: 'ils/elles' }
+/* Common high-school nouns. The card shows the word; the bin is the gender. */
+const NOUNS = [
+  ['libro','m'],['perro','m'],['gato','m'],['colegio','m'],['amigo','m'],['coche','m'],['tren','m'],
+  ['lápiz','m'],['cuaderno','m'],['reloj','m'],['teléfono','m'],['parque','m'],['árbol','m'],['sol','m'],
+  ['niño','m'],['hombre','m'],['país','m'],['pueblo','m'],['año','m'],['mes','m'],['trabajo','m'],
+  ['deporte','m'],['cine','m'],['bolígrafo','m'],['examen','m'],['avión','m'],['museo','m'],['barrio','m'],
+  ['casa','f'],['escuela','f'],['mesa','f'],['silla','f'],['puerta','f'],['ventana','f'],['ciudad','f'],
+  ['calle','f'],['noche','f'],['mañana','f'],['tarde','f'],['semana','f'],['hora','f'],['clase','f'],
+  ['pregunta','f'],['respuesta','f'],['playa','f'],['montaña','f'],['flor','f'],['luna','f'],['estrella','f'],
+  ['niña','f'],['mujer','f'],['familia','f'],['vida','f'],['canción','f'],['película','f'],['biblioteca','f'],
+  ['tienda','f'],['tarea','f']
 ];
 
-const THEMES = {
-  es: {
-    'la comida': [['la manzana','the apple'],['el pan','the bread'],['la leche','the milk'],['el queso','the cheese'],['el arroz','the rice'],['la sopa','the soup'],['el pollo','the chicken'],['la carne','the meat'],['el pescado','the fish'],['la ensalada','the salad'],['el huevo','the egg'],['la naranja','the orange'],['el tomate','the tomato'],['la patata','the potato'],['el plátano','the banana'],['la fresa','the strawberry'],['el café','the coffee'],['el zumo','the juice']],
-    'la familia': [['la madre','the mother'],['el padre','the father'],['el hermano','the brother'],['la hermana','the sister'],['el abuelo','the grandfather'],['la abuela','the grandmother'],['el tío','the uncle'],['la tía','the aunt'],['el primo','the male cousin'],['la prima','the female cousin'],['el hijo','the son'],['la hija','the daughter'],['el bebé','the baby'],['el esposo','the husband'],['la esposa','the wife'],['el sobrino','the nephew'],['la sobrina','the niece']],
-    'la ropa': [['la camisa','the shirt'],['los pantalones','the pants'],['la falda','the skirt'],['el vestido','the dress'],['los zapatos','the shoes'],['el sombrero','the hat'],['la chaqueta','the jacket'],['los calcetines','the socks'],['la corbata','the tie'],['el abrigo','the coat'],['la bufanda','the scarf'],['los guantes','the gloves'],['la blusa','the blouse'],['el cinturón','the belt'],['las gafas','the glasses'],['la gorra','the cap'],['el suéter','the sweater']],
-    'la casa': [['la puerta','the door'],['la ventana','the window'],['la mesa','the table'],['la silla','the chair'],['la cama','the bed'],['la cocina','the kitchen'],['el baño','the bathroom'],['el dormitorio','the bedroom'],['el salón','the living room'],['la lámpara','the lamp'],['el sofá','the sofa'],['la nevera','the refrigerator'],['el jardín','the garden'],['la pared','the wall'],['el techo','the ceiling'],['la alfombra','the rug'],['la llave','the key']],
-    'el cuerpo': [['la cabeza','the head'],['el ojo','the eye'],['la nariz','the nose'],['la boca','the mouth'],['la oreja','the ear'],['el brazo','the arm'],['la mano','the hand'],['la pierna','the leg'],['el pie','the foot'],['el dedo','the finger'],['el pelo','the hair'],['el diente','the tooth'],['la espalda','the back'],['el estómago','the stomach'],['el corazón','the heart'],['la cara','the face'],['el cuello','the neck']],
-    'los colores': [['rojo','red'],['azul','blue'],['verde','green'],['amarillo','yellow'],['negro','black'],['blanco','white'],['naranja','orange'],['morado','purple'],['rosa','pink'],['gris','gray'],['marrón','brown'],['dorado','gold'],['plateado','silver'],['violeta','violet'],['beige','beige'],['turquesa','turquoise']]
-  },
-  fr: {
-    'la nourriture': [['la pomme','the apple'],['le pain','the bread'],['le lait','the milk'],['le fromage','the cheese'],['le riz','the rice'],['la soupe','the soup'],['le poulet','the chicken'],['la viande','the meat'],['le poisson','the fish'],['la salade','the salad'],["l'œuf",'the egg'],["l'orange",'the orange'],['la tomate','the tomato'],['la banane','the banana'],['la fraise','the strawberry'],['le café','the coffee'],['le jus','the juice'],['le gâteau','the cake'],['la glace','the ice cream']],
-    'la famille': [['la mère','the mother'],['le père','the father'],['le frère','the brother'],['la sœur','the sister'],['le grand-père','the grandfather'],['la grand-mère','the grandmother'],["l'oncle",'the uncle'],['la tante','the aunt'],['le cousin','the male cousin'],['la cousine','the female cousin'],['le fils','the son'],['la fille','the daughter'],['le bébé','the baby'],['le mari','the husband'],['la femme','the wife'],['le neveu','the nephew'],['la nièce','the niece']],
-    'les vêtements': [['la chemise','the shirt'],['le pantalon','the pants'],['la jupe','the skirt'],['la robe','the dress'],['les chaussures','the shoes'],['le chapeau','the hat'],['la veste','the jacket'],['les chaussettes','the socks'],['la cravate','the tie'],['le manteau','the coat'],["l'écharpe",'the scarf'],['les gants','the gloves'],['la ceinture','the belt'],['les lunettes','the glasses'],['la casquette','the cap'],['le pull','the sweater'],['le short','the shorts']],
-    'la maison': [['la porte','the door'],['la fenêtre','the window'],['la table','the table'],['la chaise','the chair'],['le lit','the bed'],['la cuisine','the kitchen'],['la salle de bain','the bathroom'],['la chambre','the bedroom'],['le salon','the living room'],['la lampe','the lamp'],['le canapé','the sofa'],['le réfrigérateur','the refrigerator'],['le jardin','the garden'],['le mur','the wall'],['le toit','the roof'],['le tapis','the rug'],['la clé','the key']],
-    'le corps': [['la tête','the head'],["l'œil",'the eye'],['le nez','the nose'],['la bouche','the mouth'],["l'oreille",'the ear'],['le bras','the arm'],['la main','the hand'],['la jambe','the leg'],['le pied','the foot'],['le doigt','the finger'],['les cheveux','the hair'],['la dent','the tooth'],['le dos','the back'],['le ventre','the stomach'],['le cœur','the heart'],['le visage','the face'],['le cou','the neck']],
-    'les couleurs': [['rouge','red'],['bleu','blue'],['vert','green'],['jaune','yellow'],['noir','black'],['blanc','white'],['orange','orange'],['violet','purple'],['rose','pink'],['gris','gray'],['marron','brown'],['doré','gold'],['argenté','silver'],['beige','beige'],['turquoise','turquoise'],['brun','brown']]
-  }
-};
+const engine = Engine.create({ enableSleeping: true });
+engine.positionIterations = 8;
+engine.velocityIterations = 6;
+engine.gravity.y = 1;
+const world = engine.world;
 
-/* Noun, gender, English. Articles are the standard ones; tricky sets carry their own. */
-const GENDER = {
-  es: {
-    m: [['libro','the book'],['perro','the dog'],['gato','the cat'],['colegio','the school'],['amigo','the male friend'],['coche','the car'],['tren','the train'],['lápiz','the pencil'],['cuaderno','the notebook'],['reloj','the watch'],['teléfono','the phone'],['parque','the park'],['árbol','the tree'],['sol','the sun'],['niño','the boy'],['hombre','the man'],['país','the country'],['pueblo','the town'],['año','the year'],['mes','the month'],['trabajo','the work'],['deporte','the sport'],['cine','the cinema'],['bolígrafo','the pen'],['examen','the exam'],['avión','the airplane'],['museo','the museum'],['barrio','the neighborhood']],
-    f: [['casa','the house'],['escuela','the school'],['mesa','the table'],['silla','the chair'],['puerta','the door'],['ventana','the window'],['ciudad','the city'],['calle','the street'],['noche','the night'],['mañana','the morning'],['tarde','the afternoon'],['semana','the week'],['hora','the hour'],['clase','the class'],['pregunta','the question'],['respuesta','the answer'],['playa','the beach'],['montaña','the mountain'],['flor','the flower'],['luna','the moon'],['estrella','the star'],['niña','the girl'],['mujer','the woman'],['familia','the family'],['vida','the life'],['canción','the song'],['película','the movie'],['biblioteca','the library'],['tienda','the shop'],['tarea','the homework']]
-  },
-  fr: {
-    m: [['livre','the book'],['chien','the dog'],['chat','the cat'],['garçon','the boy'],['stylo','the pen'],['cahier','the notebook'],['tableau','the board'],['train','the train'],['vélo','the bike'],['parc','the park'],['arbre','the tree'],['soleil','the sun'],['pays','the country'],['village','the village'],['marché','the market'],['temps','the time'],['mois','the month'],['jour','the day'],['travail','the work'],['sport','the sport'],['cinéma','the cinema'],['restaurant','the restaurant'],['magasin','the store'],['hôtel','the hotel'],['jardin','the garden'],['frère','the brother'],['père','the father'],['fils','the son'],['devoir','the homework'],['avion','the airplane'],['matin','the morning'],['soir','the evening']],
-    f: [['maison','the house'],['table','the table'],['chaise','the chair'],['porte','the door'],['fenêtre','the window'],['ville','the city'],['rue','the street'],['nuit','the night'],['semaine','the week'],['heure','the hour'],['classe','the class'],['leçon','the lesson'],['question','the question'],['réponse','the answer'],['montagne','the mountain'],['fleur','the flower'],['lune','the moon'],['étoile','the star'],['fille','the girl'],['femme','the woman'],['famille','the family'],['vie','the life'],['chanson','the song'],['voiture','the car'],['école','the school'],['gare','the station'],['bibliothèque','the library'],['musique','the music'],['lettre','the letter'],['histoire','the story'],['chambre','the bedroom'],['mère','the mother'],['sœur','the sister']]
-  }
-};
+const stage = document.getElementById('stage');
+const art = document.getElementById('art');
+const ctx = art.getContext('2d');
+const measure = document.createElement('canvas').getContext('2d');
 
-const TRICKY = {
-  es: [
-    { w: 'día', g: 'm', en: 'the day', full: 'el día', note: 'Masculine, even though it ends in -a.' },
-    { w: 'mapa', g: 'm', en: 'the map', full: 'el mapa', note: 'Masculine, even though it ends in -a.' },
-    { w: 'problema', g: 'm', en: 'the problem', full: 'el problema', note: 'Masculine. Greek nouns ending in -ma are masculine.' },
-    { w: 'idioma', g: 'm', en: 'the language', full: 'el idioma', note: 'Masculine. Greek nouns ending in -ma are masculine.' },
-    { w: 'planeta', g: 'm', en: 'the planet', full: 'el planeta', note: 'Masculine. Greek nouns ending in -ma are masculine.' },
-    { w: 'mano', g: 'f', en: 'the hand', full: 'la mano', note: 'Feminine, even though it ends in -o.' },
-    { w: 'foto', g: 'f', en: 'the photo', full: 'la foto', note: 'Feminine. Short for fotografía.' },
-    { w: 'moto', g: 'f', en: 'the motorcycle', full: 'la moto', note: 'Feminine. Short for motocicleta.' },
-    { w: 'agua', g: 'f', en: 'the water', full: 'el agua', note: 'Feminine, but it takes el in the singular because it begins with a stressed a. The plural is las aguas.' }
-  ],
-  fr: [
-    { w: 'musée', g: 'm', en: 'the museum', full: 'le musée', note: 'Masculine, even though it ends in -ée.' },
-    { w: 'lycée', g: 'm', en: 'the high school', full: 'le lycée', note: 'Masculine, even though it ends in -ée.' },
-    { w: 'silence', g: 'm', en: 'the silence', full: 'le silence', note: 'Masculine, even though it ends in -ence.' },
-    { w: 'problème', g: 'm', en: 'the problem', full: 'le problème', note: 'Masculine. Greek nouns ending in -ème stay masculine.' },
-    { w: 'plage', g: 'f', en: 'the beach', full: 'la plage', note: 'Feminine.' },
-    { w: 'page', g: 'f', en: 'the page', full: 'la page', note: 'Feminine.' },
-    { w: 'fin', g: 'f', en: 'the end', full: 'la fin', note: 'Feminine, even though it does not end in -e.' },
-    { w: 'main', g: 'f', en: 'the hand', full: 'la main', note: 'Feminine, even though it does not end in -e.' },
-    { w: 'mer', g: 'f', en: 'the sea', full: 'la mer', note: 'Feminine, even though it does not end in -e.' },
-    { w: 'photo', g: 'f', en: 'the photo', full: 'la photo', note: 'Feminine. Short for photographie.' }
-  ]
-};
+let cards = [];
+let bins = [];
+let queue = [];
+let layout = null;
+let drag = null;
+let bag = [];
+let score = 0;
+let sorted = 0;
+let spawnAcc = 0;
+let W = 1, H = 1, DPR = 1, fit = 1;
 
-const SCENARIOS = [
-  { lang: 'es', mode: 'gender', tricky: false, name: 'Español · Gender' },
-  { lang: 'es', mode: 'themes', tricky: false, name: 'Español · Themes' },
-  { lang: 'es', mode: 'conj', tricky: false, name: 'Español · Verbs' },
-  { lang: 'es', mode: 'gender', tricky: true, name: 'Español · Tricky gender' },
-  { lang: 'fr', mode: 'gender', tricky: false, name: 'Français · Gender' },
-  { lang: 'fr', mode: 'themes', tricky: false, name: 'Français · Themes' },
-  { lang: 'fr', mode: 'conj', tricky: false, name: 'Français · Verbs' },
-  { lang: 'fr', mode: 'gender', tricky: true, name: 'Français · Tricky gender' },
-  { lang: 'es', mode: 'list', tricky: false, name: 'My list' }
-];
-
-const LIST_KEY = 'amplitude-lingo-drop-list';
-const LIST_DEFAULT = [
-  'la manzana | la comida | the apple',
-  'el pan | la comida | the bread',
-  'el queso | la comida | the cheese',
-  'la madre | la familia | the mother',
-  'el padre | la familia | the father',
-  'la hermana | la familia | the sister'
-].join('\n');
-
-const GLYPHS = {
-  es: ['á','é','í','ó','ú','ñ','¿','¡'],
-  fr: ['é','è','ê','à','ç','œ','«','»']
-};
-
-function shuffle(a) {
+function shuffle(list) {
+  const a = list.slice();
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const t = a[i]; a[i] = a[j]; a[j] = t;
   }
   return a;
 }
-function esc(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-function hexToRgb(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  return [n >> 16 & 255, n >> 8 & 255, n & 255];
-}
-function lerpHex(a, b, t) {
-  const A = hexToRgb(a), B = hexToRgb(b);
-  const c = A.map((v, i) => Math.round(v + (B[i] - v) * t));
-  return `rgb(${c[0]},${c[1]},${c[2]})`;
-}
-function frArticle(noun, g) {
-  if (/^[aeiouàâäéèêëîïôùûüœh]/i.test(noun)) return "l'" + noun;
-  return (g === 'm' ? 'le ' : 'la ') + noun;
-}
-function genderWord(lang, g) {
-  if (lang === 'es') return g === 'm' ? 'masculine' : 'feminine';
-  return g === 'm' ? 'masculin' : 'féminin';
-}
-function esRegular(stem, kind, inf, en) {
-  const ends = { ar: ['o','as','a','amos','áis','an'], er: ['o','es','e','emos','éis','en'], ir: ['o','es','e','imos','ís','en'] }[kind];
-  return ends.map((e, i) => {
-    const text = stem + e;
-    return { text, bins: [ES_SUBJ[i].id], sub: inf + ' · ' + en, speak: text, answer: text + ': ' + ES_SUBJ[i].label + ', ' + inf + ', ' + en };
-  });
-}
-function esIrregular(forms, inf, en) {
-  return forms.map((text, i) => ({ text, bins: [ES_SUBJ[i].id], sub: inf + ' · ' + en, speak: text, answer: text + ': ' + ES_SUBJ[i].label + ', ' + inf + ', ' + en }));
-}
-function groupFR(forms, inf, en) {
-  const map = new Map();
-  forms.forEach((form, i) => {
-    if (!map.has(form)) map.set(form, []);
-    map.get(form).push(i);
-  });
-  const out = [];
-  map.forEach((idxs, form) => {
-    const labels = idxs.map(i => FR_SUBJ[i].label);
-    const identical = idxs.length > 1;
-    out.push({
-      text: form,
-      bins: idxs.map(i => FR_SUBJ[i].id),
-      sub: inf + ' · ' + en,
-      speak: form,
-      answer: identical
-        ? form + ': ' + labels.join(' / ') + ' — these forms are identical (' + inf + ', ' + en + ')'
-        : form + ': ' + labels[0] + ', ' + inf + ', ' + en
-    });
-  });
-  return out;
-}
-function frER(stem, inf, en) { return groupFR([stem+'e', stem+'es', stem+'e', stem+'ons', stem+'ez', stem+'ent'], inf, en); }
-function frIR(stem, inf, en) { return groupFR([stem+'is', stem+'is', stem+'it', stem+'issons', stem+'issez', stem+'issent'], inf, en); }
-function frRE(stem, inf, en) { return groupFR([stem+'s', stem+'s', stem, stem+'ons', stem+'ez', stem+'ent'], inf, en); }
 
-function conjBank(lang) {
-  if (lang === 'es') {
-    return [].concat(
-      esRegular('habl','ar','hablar','to speak'), esRegular('estudi','ar','estudiar','to study'),
-      esRegular('cant','ar','cantar','to sing'), esRegular('bail','ar','bailar','to dance'),
-      esRegular('trabaj','ar','trabajar','to work'), esRegular('escuch','ar','escuchar','to listen'),
-      esRegular('compr','ar','comprar','to buy'), esRegular('mir','ar','mirar','to watch'),
-      esRegular('com','er','comer','to eat'), esRegular('beb','er','beber','to drink'),
-      esRegular('le','er','leer','to read'), esRegular('corr','er','correr','to run'),
-      esRegular('aprend','er','aprender','to learn'),
-      esRegular('viv','ir','vivir','to live'), esRegular('escrib','ir','escribir','to write'),
-      esRegular('abr','ir','abrir','to open'), esRegular('recib','ir','recibir','to receive'),
-      esIrregular(['soy','eres','es','somos','sois','son'],'ser','to be'),
-      esIrregular(['estoy','estás','está','estamos','estáis','están'],'estar','to be'),
-      esIrregular(['tengo','tienes','tiene','tenemos','tenéis','tienen'],'tener','to have'),
-      esIrregular(['voy','vas','va','vamos','vais','van'],'ir','to go')
-    );
-  }
-  return [].concat(
-    frER('parl','parler','to speak'), frER('aim','aimer','to like'), frER('écout','écouter','to listen'),
-    frER('regard','regarder','to watch'), frER('jou','jouer','to play'), frER('habit','habiter','to live'),
-    frER('chant','chanter','to sing'), frER('donn','donner','to give'),
-    frIR('fin','finir','to finish'), frIR('chois','choisir','to choose'), frIR('réuss','réussir','to succeed'),
-    frIR('grand','grandir','to grow'), frIR('rempl','remplir','to fill'),
-    frRE('vend','vendre','to sell'), frRE('attend','attendre','to wait'), frRE('répond','répondre','to answer'),
-    frRE('entend','entendre','to hear'), frRE('perd','perdre','to lose'),
-    groupFR(['suis','es','est','sommes','êtes','sont'],'être','to be'),
-    groupFR(['ai','as','a','avons','avez','ont'],'avoir','to have'),
-    groupFR(['vais','vas','va','allons','allez','vont'],'aller','to go'),
-    groupFR(['fais','fais','fait','faisons','faites','font'],'faire','to do')
-  );
-}
-
-const engine = Engine.create({ enableSleeping: true, positionIterations: 8, velocityIterations: 6 });
-engine.gravity.y = CONFIG.gravity;
-const world = engine.world;
-let cards = [];
-let bins = [];
-let layout = null;
-let deck = [];
-let bag = [];
-let particles = [];
-let floaters = [];
-let queue = [];
-let drag = null;
-let glyphs = [];
-let scenarioIndex = 0;
-let listLang = 'es';
-let phase = 'intro'; /* intro | play | summary */
-let round = null;
-let spawnAcc = 0;
-let simMs = 0;
-let speed = 1;
-let roundLen = 60;
-let practice = false;
-let speechOn = true;
-let speechRate = 0.95;
-let layers = { hints: false, heat: false, xray: false };
-let toastTimer = 0;
-let audioCtx = null;
-let xray = null;
-let xrayRunning = false;
-let W = 1, H = 1, DPR = 1, fit = 1;
-let listError = '';
-
-const stage = $('stage');
-const art = $('art');
-const xrayCanvas = $('xray');
-const ctx = art.getContext('2d');
-const measure = document.createElement('canvas').getContext('2d');
-
-function freshRound() {
-  round = {
-    score: 0, combo: 0, streak: 0, best: 0, correct: 0, wrong: 0,
-    review: [], elapsed: 0, left: practice ? 0 : roundLen * 1000,
-    danger: 0, reason: ''
-  };
-}
-
-function applyAccent(lang) {
-  const es = lang === 'es';
-  document.documentElement.style.setProperty('--accent', es ? '#F97316' : '#3B82F6');
-  document.documentElement.style.setProperty('--accent2', es ? '#FACC15' : '#F43F5E');
-  buildGlyphs(lang);
-}
-function activeLang() {
-  const s = SCENARIOS[scenarioIndex];
-  return s.mode === 'list' ? listLang : s.lang;
-}
-function buildGlyphs(lang) {
-  const set = GLYPHS[lang] || GLYPHS.es;
-  glyphs = Array.from({ length: 36 }, (_, i) => ({
-    ch: set[i % set.length],
-    x: Math.random(), y: Math.random(),
-    s: 28 + Math.random() * 54,
-    a: 0.035 + Math.random() * 0.05,
-    vx: (0.004 + Math.random() * 0.012) * (i % 2 ? 1 : 0.45),
-    vy: (Math.random() - 0.5) * 0.004,
-    layer: i % 2
-  }));
-}
-
-function genderBins(lang) {
-  if (lang === 'es') return [{ id: 'm', label: 'el', sub: 'masculino' }, { id: 'f', label: 'la', sub: 'femenino' }];
-  return [{ id: 'm', label: 'le', sub: 'masculin' }, { id: 'f', label: 'la', sub: 'féminin' }];
-}
-function genderCards(lang, tricky) {
-  const gWord = g => genderWord(lang, g);
-  if (tricky) {
-    return TRICKY[lang].map(item => ({
-      text: item.w, bins: [item.g], hint: item.en, tricky: true, speak: item.w,
-      answer: item.full + ': ' + gWord(item.g) + ', ' + item.en + '. ' + item.note
-    }));
-  }
-  const out = [];
-  ['m', 'f'].forEach(g => {
-    GENDER[lang][g].forEach(([w, en]) => {
-      const full = lang === 'es' ? (g === 'm' ? 'el ' : 'la ') + w : frArticle(w, g);
-      out.push({ text: w, bins: [g], hint: en, speak: w, answer: full + ': ' + gWord(g) + ', ' + en });
-    });
-  });
-  return out;
-}
-function themeCards(lang) {
-  const keys = shuffle(Object.keys(THEMES[lang])).slice(0, 4);
-  const binsMeta = keys.map(k => ({ id: k, label: k, sub: '' }));
-  const items = [];
-  keys.forEach(k => {
-    THEMES[lang][k].forEach(([word, en]) => {
-      items.push({ text: word, bins: [k], hint: en, speak: word, answer: word + ': ' + k + ', ' + en });
-    });
-  });
-  return { binsMeta, items };
-}
-function parseList(text) {
-  const items = [];
-  text.split(/\n/).forEach(line => {
-    const raw = line.trim();
-    if (!raw || raw.startsWith('#')) return;
-    const parts = raw.split('|').map(s => s.trim()).filter(Boolean);
-    if (parts.length < 2) return;
-    const word = parts[0].slice(0, 48);
-    const bin = parts[1].slice(0, 32);
-    const hint = (parts[2] || '').slice(0, 80);
-    items.push({
-      text: word, bins: [bin], hint, speak: word,
-      answer: hint ? word + ': ' + bin + ', ' + hint : word + ': ' + bin
-    });
-  });
-  const binsMeta = [];
-  const seen = new Set();
-  items.forEach(it => {
-    const id = it.bins[0];
-    if (!seen.has(id)) { seen.add(id); binsMeta.push({ id, label: id, sub: '' }); }
-  });
-  return { items, binsMeta };
-}
-
-function currentContent() {
-  const s = SCENARIOS[scenarioIndex];
-  const lang = activeLang();
-  if (s.mode === 'themes') {
-    const built = themeCards(lang);
-    return { binsMeta: built.binsMeta, items: built.items, lang };
-  }
-  if (s.mode === 'gender') {
-    return { binsMeta: genderBins(lang), items: genderCards(lang, s.tricky), lang };
-  }
-  if (s.mode === 'conj') {
-    const meta = (lang === 'es' ? ES_SUBJ : FR_SUBJ).map(x => ({ id: x.id, label: x.label, sub: '' }));
-    return { binsMeta: meta, items: conjBank(lang), lang };
-  }
-  const parsed = parseList($('listText').value);
-  listError = '';
-  if (parsed.binsMeta.length < 2 || parsed.binsMeta.length > 6 || parsed.items.length < 2) {
-    listError = 'Need 2 to 6 bins and at least two cards. Use word | bin | hint.';
-  }
-  return { binsMeta: parsed.binsMeta, items: parsed.items, lang, error: listError };
-}
-
-function computeLayout(n) {
-  const B = CONFIG.bound;
-  const top = B;
-  const bottom = CONFIG.worldH - B;
-  const left0 = B;
-  const left1 = B + CONFIG.colW;
-  const right1 = CONFIG.worldW - B;
-  const right0 = right1 - CONFIG.colW;
-  const leftN = Math.ceil(n / 2);
-  const rightN = n - leftN;
-  const specs = [];
-  const col = (count, minX, maxX, side) => {
-    if (!count) return;
-    const h = (bottom - top) / count;
-    for (let i = 0; i < count; i++) {
-      specs.push({
-        minX, maxX, side,
-        minY: top + i * h,
-        maxY: top + (i + 1) * h,
-        lip: count === 1 ? CONFIG.lipTall : CONFIG.lipShort
-      });
-    }
-  };
-  col(leftN, left0, left1, 'left');
-  col(rightN, right0, right1, 'right');
-  return {
-    bins: specs,
-    tray: { minX: left1 + CONFIG.gap, maxX: right0 - CONFIG.gap, minY: top, maxY: bottom },
-    floorY: bottom,
-    innerLeft: left1,
-    innerRight: right0
-  };
-}
-
-function addStatic(x, y, w, h, label) {
+function addStatic(x, y, w, h) {
   Composite.add(world, Bodies.rectangle(x, y, w, h, {
-    isStatic: true, friction: 0.45, restitution: 0.04, label: label || 'wall'
+    isStatic: true, friction: 0.45, restitution: 0.04, label: 'wall'
   }));
 }
-function buildArena(binsMeta) {
+
+function buildArena() {
   if (drag) {
     Composite.remove(world, drag.constraint);
     drag = null;
@@ -735,20 +161,30 @@ function buildArena(binsMeta) {
   cards = [];
   bins = [];
   queue = [];
-  const n = Math.min(6, Math.max(2, binsMeta.length));
-  layout = computeLayout(n);
-  const B = CONFIG.bound, Ww = CONFIG.worldW, Hh = CONFIG.worldH;
+  const B = CONFIG.bound;
+  const Ww = CONFIG.worldW;
+  const Hh = CONFIG.worldH;
+  const left0 = B, left1 = B + CONFIG.colW;
+  const right1 = Ww - B, right0 = right1 - CONFIG.colW;
+  const top = B, bottom = Hh - B;
+  layout = {
+    tray: { minX: left1 + CONFIG.gap, maxX: right0 - CONFIG.gap },
+    floorY: bottom,
+    bins: [
+      { id: 'm', label: 'el', sub: 'masculino', side: 'left', minX: left0, maxX: left1, minY: top, maxY: bottom, lip: CONFIG.lip, glow: 0, flash: 0 },
+      { id: 'f', label: 'la', sub: 'femenino', side: 'right', minX: right0, maxX: right1, minY: top, maxY: bottom, lip: CONFIG.lip, glow: 0, flash: 0 }
+    ]
+  };
   addStatic(B / 2, Hh / 2, B, Hh);
   addStatic(Ww - B / 2, Hh / 2, B, Hh);
   addStatic(Ww / 2, B / 2, Ww, B);
   addStatic(Ww / 2, Hh - B / 2, Ww, B);
-  const fy = layout.floorY - CONFIG.wall / 2;
-  const x1 = layout.innerLeft - 4;
-  const x2 = layout.innerRight + 4;
-  addStatic((x1 + x2) / 2, fy, x2 - x1, CONFIG.wall, 'tray');
-  binsMeta.slice(0, n).forEach((meta, i) => makeBin(layout.bins[i], meta));
+  const x1 = left1 - 4, x2 = right0 + 4;
+  addStatic((x1 + x2) / 2, bottom - CONFIG.wall / 2, x2 - x1, CONFIG.wall);
+  layout.bins.forEach(makeBin);
 }
-function makeBin(spec, meta) {
+
+function makeBin(spec) {
   const t = CONFIG.wall;
   const opt = { isStatic: true, friction: 0.4, restitution: 0.02, label: 'bin-part' };
   const midY = (spec.minY + spec.maxY) / 2;
@@ -771,35 +207,25 @@ function makeBin(spec, meta) {
   const sw = Math.max(48, w - t * 2 - 36);
   const scx = spec.side === 'left' ? spec.minX + t + 8 + sw / 2 : spec.maxX - t - 8 - sw / 2;
   const scy = spec.maxY - t - sh / 2 - 6;
-  const sensor = Bodies.rectangle(scx, scy, sw, sh, {
-    isStatic: true, isSensor: true, label: 'sensor'
-  });
-  sensor.binId = meta.id;
+  const sensor = Bodies.rectangle(scx, scy, sw, sh, { isStatic: true, isSensor: true, label: 'sensor' });
+  sensor.binId = spec.id;
   Composite.add(world, [compound, sensor]);
-  bins.push(Object.assign({ body: compound, sensor, glow: 0, shake: 0, flash: 0, ok: 0, bad: 0 }, spec, meta));
+  spec.sensor = sensor;
+  bins.push(spec);
 }
 
-function cardSize(item) {
-  const wordFont = '700 26px Inter, sans-serif';
-  const subFont = '500 13px Inter, sans-serif';
-  measure.font = wordFont;
-  let w = measure.measureText(item.text).width;
-  if (item.sub) { measure.font = subFont; w = Math.max(w, measure.measureText(item.sub).width); }
-  if (item.hint) { measure.font = subFont; w = Math.max(w, measure.measureText(item.hint).width); }
-  w = Math.max(124, Math.min(320, w + 44));
-  const h = item.sub ? CONFIG.cardHSub : CONFIG.cardH;
-  return { w, h };
-}
 function spawnCard() {
-  if (!deck.length) return;
-  if (!bag.length) bag = shuffle(deck.slice());
-  const item = bag.pop();
-  const size = cardSize(item);
+  if (!bag.length) bag = shuffle(NOUNS);
+  const pair = bag.pop();
+  const text = pair[0];
+  const gender = pair[1];
+  measure.font = '700 26px Inter, sans-serif';
+  const w = Math.max(124, Math.min(280, measure.measureText(text).width + 44));
+  const h = CONFIG.cardH;
   const span = (layout.tray.maxX - layout.tray.minX) * 0.42;
   const x = (layout.tray.minX + layout.tray.maxX) / 2 + (Math.random() - 0.5) * span;
-  const y = CONFIG.spawnY;
-  const body = Bodies.rectangle(x, y, size.w, size.h, {
-    chamfer: { radius: Math.min(CONFIG.chamfer, size.w / 2 - 2, size.h / 2 - 2) },
+  const body = Bodies.rectangle(x, CONFIG.spawnY, w, h, {
+    chamfer: { radius: Math.min(CONFIG.chamfer, w / 2 - 2, h / 2 - 2) },
     restitution: 0.12,
     friction: 0.62,
     frictionStatic: 0.8,
@@ -809,7 +235,7 @@ function spawnCard() {
     label: 'card',
     sleepThreshold: 40
   });
-  body.lingo = Object.assign({ w: size.w, h: size.h, immune: 0, done: false }, item);
+  body.lingo = { text, gender, w, h, immune: 0, done: false };
   Body.setAngle(body, (Math.random() - 0.5) * 0.5);
   Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.003);
   Body.setVelocity(body, { x: (Math.random() - 0.5) * 0.06, y: 0.04 });
@@ -817,7 +243,7 @@ function spawnCard() {
   cards.push(body);
 }
 
-Events.on(engine, 'collisionStart', ev => {
+Events.on(engine, 'collisionStart', function (ev) {
   for (let i = 0; i < ev.pairs.length; i++) {
     const p = ev.pairs[i];
     let card = null, sensor = null;
@@ -829,48 +255,33 @@ Events.on(engine, 'collisionStart', ev => {
 });
 
 function processQueue() {
-  const seen = new Set();
+  const seen = {};
   while (queue.length) {
     const hit = queue.shift();
-    if (seen.has(hit.id)) continue;
-    const card = cards.find(c => c.id === hit.id);
+    if (seen[hit.id]) continue;
+    const card = cards.find(function (c) { return c.id === hit.id; });
     if (!card || card.lingo.done) continue;
     if (drag && drag.body.id === card.id) continue;
     if (performance.now() < card.lingo.immune) continue;
-    seen.add(hit.id);
-    const bin = bins.find(b => b.id === hit.binId);
+    seen[hit.id] = true;
+    const bin = bins.find(function (b) { return b.id === hit.binId; });
     if (!bin) continue;
-    const ok = card.lingo.bins.indexOf(bin.id) !== -1;
-    if (phase !== 'play') {
-      if (ok) celebrate(card, bin, false);
-      else reject(card, bin, false);
-      continue;
-    }
-    if (ok) celebrate(card, bin, true);
-    else reject(card, bin, true);
+    if (card.lingo.gender === bin.id) correct(card, bin);
+    else wrong(card, bin);
   }
 }
-function celebrate(card, bin, count) {
+
+function correct(card, bin) {
   card.lingo.done = true;
-  const pos = { x: card.position.x, y: card.position.y };
-  burst(pos.x, pos.y);
   bin.glow = 1;
-  if (count) {
-    round.streak += 1;
-    round.best = Math.max(round.best, round.streak);
-    round.combo = Math.min(CONFIG.comboMax, round.streak);
-    const pts = CONFIG.points * Math.max(1, round.combo);
-    round.score += pts;
-    round.correct += 1;
-    bin.ok += 1;
-    floaters.push({ x: pos.x, y: pos.y, text: '+' + pts, life: 1, color: '#F8FAFC' });
-    chime(true);
-  }
+  score += CONFIG.points;
+  sorted += 1;
   removeCard(card);
+  paintScore();
 }
-function reject(card, bin, count) {
+
+function wrong(card, bin) {
   bin.flash = 1;
-  bin.shake = 1;
   card.lingo.immune = performance.now() + 900;
   const trayX = (layout.tray.minX + layout.tray.maxX) / 2;
   const outX = bin.side === 'left' ? bin.maxX + 40 : bin.minX - 40;
@@ -879,17 +290,8 @@ function reject(card, bin, count) {
   Body.setPosition(card, { x: outX, y: outY });
   Body.setVelocity(card, { x: Math.sign(trayX - outX) * 0.45, y: -0.35 });
   Body.setAngularVelocity(card, (Math.random() - 0.5) * 0.012);
-  if (count) {
-    round.streak = 0;
-    round.combo = 0;
-    round.wrong += 1;
-    bin.bad += 1;
-    if (!round.review.some(r => r === card.lingo.answer)) round.review.push(card.lingo.answer);
-    showToast(card.lingo.answer, false);
-    speak(card.lingo.answer);
-    chime(false);
-  }
 }
+
 function removeCard(card) {
   if (drag && drag.body === card) {
     Composite.remove(world, drag.constraint);
@@ -900,28 +302,32 @@ function removeCard(card) {
   const i = cards.indexOf(card);
   if (i >= 0) cards.splice(i, 1);
 }
-function burst(x, y) {
-  const lang = activeLang();
-  const cols = lang === 'es' ? ['#F97316', '#FACC15', '#FDBA74'] : ['#3B82F6', '#F43F5E', '#93C5FD'];
-  const n = reduceMotion ? 6 : CONFIG.particleN;
-  for (let i = 0; i < n; i++) {
-    const a = Math.random() * Math.PI * 2;
-    const s = 0.08 + Math.random() * 0.28;
-    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.08, life: 1, decay: 0.012 + Math.random() * 0.02, color: cols[i % cols.length], r: 2 + Math.random() * 3.2 });
-  }
+
+function paintScore() {
+  document.getElementById('score').textContent = String(score);
+  document.getElementById('sorted').textContent = String(sorted);
 }
-function pileHigh() {
-  for (let i = 0; i < cards.length; i++) {
-    const c = cards[i];
-    if (drag && drag.body === c) continue;
-    if (c.position.y < CONFIG.dangerY && c.position.x > layout.tray.minX && c.position.x < layout.tray.maxX) return true;
-  }
-  return false;
+
+function resetRound() {
+  score = 0;
+  sorted = 0;
+  bag = [];
+  spawnAcc = 0;
+  buildArena();
+  spawnCard();
+  spawnCard();
+  spawnCard();
+  paintScore();
 }
-function spawnInterval() {
-  if (phase !== 'play' || practice) return CONFIG.practiceSpawn;
-  const t = simMs / 1000;
-  return Math.max(CONFIG.spawnMin, CONFIG.spawnStart - t * CONFIG.spawnRamp);
+
+function stepSim() {
+  Engine.update(engine, CONFIG.step);
+  processQueue();
+  spawnAcc += CONFIG.step;
+  if (cards.length < CONFIG.maxCards && spawnAcc >= CONFIG.spawnEvery) {
+    spawnAcc = 0;
+    spawnCard();
+  }
 }
 
 function screenToWorld(sx, sy) {
@@ -930,328 +336,10 @@ function screenToWorld(sx, sy) {
     y: CONFIG.worldH / 2 + (sy - H / 2) / fit
   };
 }
-function visibleBounds() {
-  const a = screenToWorld(0, 0), b = screenToWorld(W, H);
-  return { min: { x: a.x, y: a.y }, max: { x: b.x, y: b.y } };
-}
+
 function localXY(e) {
   const r = art.getBoundingClientRect();
   return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-function resize() {
-  const r = stage.getBoundingClientRect();
-  W = Math.max(1, r.width);
-  H = Math.max(1, r.height);
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
-  art.width = Math.round(W * DPR);
-  art.height = Math.round(H * DPR);
-  art.style.width = W + 'px';
-  art.style.height = H + 'px';
-  fit = Math.min(W / CONFIG.worldW, H / CONFIG.worldH);
-  if (xray) {
-    xray.options.pixelRatio = DPR;
-    Render.setSize(xray, W, H);
-    Render.lookAt(xray, visibleBounds(), { x: 0, y: 0 }, true);
-  }
-}
-
-function traceRound(x, y, w, h, r) {
-  r = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-function drawBackground(t) {
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.fillStyle = '#070A12';
-  ctx.fillRect(0, 0, W, H);
-  const g = ctx.createRadialGradient(W * 0.34, H * 0.4, 20, W * 0.34, H * 0.4, Math.max(W, H) * 0.62);
-  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#F97316';
-  const rgb = hexToRgb(accent);
-  g.addColorStop(0, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0.20)');
-  g.addColorStop(1, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
-  const drift = reduceMotion ? 0 : t * 0.00004;
-  for (let i = 0; i < glyphs.length; i++) {
-    const gl = glyphs[i];
-    const speed = gl.layer ? gl.vx : gl.vx * 0.55;
-    let x = ((gl.x + drift * speed * 80) % 1) * W;
-    let y = ((gl.y + Math.sin(t * 0.00015 + i) * (reduceMotion ? 0 : 0.01)) % 1) * H;
-    if (x < 0) x += W;
-    if (y < 0) y += H;
-    ctx.globalAlpha = gl.a;
-    ctx.fillStyle = accent;
-    ctx.font = '600 ' + gl.s + 'px Inter, sans-serif';
-    ctx.fillText(gl.ch, x, y);
-  }
-  ctx.globalAlpha = 1;
-}
-function drawBins() {
-  const lang = activeLang();
-  bins.forEach(bin => {
-    const ox = bin.shake ? Math.sin(performance.now() / 28) * bin.shake * 7 : 0;
-    const x = bin.minX + 8 + ox, y = bin.minY + 8, w = bin.maxX - bin.minX - 16, h = bin.maxY - bin.minY - 16;
-    let heat = null;
-    const attempts = bin.ok + bin.bad;
-    if (layers.heat && attempts) {
-      const a = bin.ok / attempts;
-      heat = a < 0.5 ? lerpHex('#F43F5E', '#FACC15', a / 0.5) : lerpHex('#FACC15', '#10B981', (a - 0.5) / 0.5);
-    }
-    ctx.save();
-    traceRound(x, y, w, h, 16);
-    const fill = ctx.createLinearGradient(x, y, x, y + h);
-    fill.addColorStop(0, 'rgba(255,255,255,0.07)');
-    fill.addColorStop(1, 'rgba(255,255,255,0.02)');
-    ctx.fillStyle = fill;
-    ctx.fill();
-    if (heat) {
-      ctx.fillStyle = heat;
-      ctx.globalAlpha = 0.16;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-    if (bin.flash > 0) {
-      ctx.fillStyle = 'rgba(244,63,94,' + (0.28 * bin.flash) + ')';
-      ctx.fill();
-    }
-    if (bin.glow > 0) {
-      ctx.save();
-      ctx.shadowColor = lang === 'es' ? '#FACC15' : '#93C5FD';
-      ctx.shadowBlur = 24 * bin.glow;
-      ctx.strokeStyle = lang === 'es' ? 'rgba(250,204,21,' + bin.glow + ')' : 'rgba(147,197,253,' + bin.glow + ')';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      ctx.restore();
-    }
-    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    const lx = bin.side === 'left' ? x + w * 0.36 : x + w * 0.64;
-    ctx.fillStyle = '#E8EDF6';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const labelSize = bin.label.length > 16 ? 15 : 20;
-    ctx.font = '700 ' + labelSize + 'px Inter, sans-serif';
-    const lines = wrap(bin.label, w * 0.7);
-    const block = lines.length * (labelSize + 2);
-    lines.forEach((line, i) => ctx.fillText(line, lx, y + h * 0.42 - block / 2 + i * (labelSize + 2)));
-    if (bin.sub) {
-      ctx.font = '500 13px Inter, sans-serif';
-      ctx.fillStyle = '#8A94A7';
-      ctx.fillText(bin.sub, lx, y + h * 0.42 + block / 2 + 8);
-    }
-    ctx.restore();
-  });
-}
-function wrap(text, maxW) {
-  const words = String(text).split(' ');
-  const lines = [];
-  let cur = '';
-  words.forEach(word => {
-    const next = cur ? cur + ' ' + word : word;
-    if (ctx.measureText(next).width > maxW && cur) { lines.push(cur); cur = word; }
-    else cur = next;
-  });
-  if (cur) lines.push(cur);
-  return lines.length ? lines : [''];
-}
-function drawDanger() {
-  if (phase === 'play' && practice) return;
-  if (phase === 'intro') return;
-  const hot = round && round.danger > 0;
-  const y = CONFIG.dangerY;
-  ctx.save();
-  ctx.beginPath();
-  ctx.setLineDash([10, 8]);
-  ctx.strokeStyle = hot ? 'rgba(244,63,94,0.9)' : 'rgba(255,255,255,0.28)';
-  ctx.lineWidth = hot ? 2.5 : 1.5;
-  ctx.moveTo(layout.tray.minX, y);
-  ctx.lineTo(layout.tray.maxX, y);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.font = '600 12px Inter, sans-serif';
-  ctx.fillStyle = hot ? '#FDA4AF' : 'rgba(232,237,246,0.55)';
-  ctx.textAlign = 'left';
-  ctx.fillText(hot ? 'OVERFLOW' : 'DANGER', layout.tray.minX + 8, y - 8);
-  ctx.restore();
-}
-function drawCards() {
-  const lang = activeLang();
-  for (let i = 0; i < cards.length; i++) {
-    const b = cards[i];
-    const L = b.lingo;
-    ctx.save();
-    ctx.translate(b.position.x, b.position.y);
-    ctx.rotate(b.angle);
-    ctx.shadowColor = 'rgba(0,0,0,0.45)';
-    ctx.shadowBlur = reduceMotion ? 0 : 16;
-    ctx.shadowOffsetY = 8;
-    traceRound(-L.w / 2, -L.h / 2, L.w, L.h, 14);
-    const g = ctx.createLinearGradient(0, -L.h / 2, 0, L.h / 2);
-    if (lang === 'es') {
-      g.addColorStop(0, 'rgba(253,186,116,0.95)');
-      g.addColorStop(0.45, 'rgba(249,115,22,0.92)');
-      g.addColorStop(1, 'rgba(124,45,18,0.95)');
-    } else {
-      g.addColorStop(0, 'rgba(191,219,254,0.95)');
-      g.addColorStop(0.5, 'rgba(59,130,246,0.92)');
-      g.addColorStop(1, 'rgba(136,19,55,0.9)');
-    }
-    ctx.fillStyle = g;
-    ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    traceRound(-L.w / 2, -L.h / 2, L.w, L.h * 0.45, 14);
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.fill();
-    ctx.restore();
-    ctx.save();
-    ctx.translate(b.position.x, b.position.y);
-    ctx.rotate(b.angle);
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-    ctx.lineWidth = 1.5;
-    traceRound(-L.w / 2, -L.h / 2, L.w, L.h, 14);
-    ctx.stroke();
-    ctx.fillStyle = '#1C120C';
-    if (lang === 'fr') ctx.fillStyle = '#0B1220';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    let size = 26;
-    ctx.font = '700 ' + size + 'px Inter, sans-serif';
-    while (ctx.measureText(L.text).width > L.w - 24 && size > 14) {
-      size -= 1;
-      ctx.font = '700 ' + size + 'px Inter, sans-serif';
-    }
-    const hasSub = !!L.sub;
-    const showHint = layers.hints && L.hint && !hasSub;
-    const wordY = hasSub ? -16 : showHint ? -12 : 0;
-    ctx.fillText(L.text, 0, wordY);
-    ctx.fillStyle = lang === 'fr' ? 'rgba(11,18,32,0.78)' : 'rgba(28,18,12,0.75)';
-    ctx.font = '600 13px Inter, sans-serif';
-    if (hasSub) ctx.fillText(L.sub, 0, 16);
-    else if (showHint) ctx.fillText(L.hint, 0, 16);
-    if (L.tricky) {
-      ctx.font = '700 10px Inter, sans-serif';
-      ctx.fillStyle = '#7C2D12';
-      ctx.fillText('TRICKY', 0, L.h / 2 - 12);
-    }
-    ctx.restore();
-  }
-}
-function drawParticles() {
-  ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < particles.length; i++) {
-    const p = particles[i];
-    ctx.globalAlpha = Math.max(0, p.life);
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-  ctx.globalAlpha = 1;
-  ctx.font = '700 16px JetBrains Mono, monospace';
-  ctx.textAlign = 'center';
-  floaters.forEach(f => {
-    ctx.globalAlpha = Math.max(0, f.life);
-    ctx.fillStyle = f.color;
-    ctx.fillText(f.text, f.x, f.y);
-  });
-  ctx.globalAlpha = 1;
-}
-function drawGrab() {
-  if (!drag) return;
-  ctx.beginPath();
-  ctx.moveTo(drag.px, drag.py);
-  ctx.lineTo(drag.body.position.x, drag.body.position.y);
-  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-}
-function renderFrame(t) {
-  drawBackground(t);
-  ctx.setTransform(
-    fit * DPR, 0, 0, fit * DPR,
-    (W / 2 - (CONFIG.worldW / 2) * fit) * DPR,
-    (H / 2 - (CONFIG.worldH / 2) * fit) * DPR
-  );
-  if (layout) {
-    drawBins();
-    if (phase === 'play') drawDanger();
-    drawCards();
-    drawParticles();
-    drawGrab();
-  }
-}
-
-function stepSim(dt) {
-  const sub = speed === 2 ? 2 : 1;
-  for (let s = 0; s < sub; s++) {
-    Engine.update(engine, CONFIG.step);
-    processQueue();
-    simMs += CONFIG.step;
-    spawnAcc += CONFIG.step;
-    const cap = phase === 'play' ? CONFIG.maxCards : CONFIG.previewCards;
-    if (phase !== 'summary' && cards.length < cap && spawnAcc >= spawnInterval()) {
-      spawnAcc = 0;
-      spawnCard();
-    }
-    if (phase === 'play') {
-      round.elapsed += CONFIG.step;
-      if (!practice) {
-        round.left -= CONFIG.step;
-        if (pileHigh()) round.danger += CONFIG.step;
-        else round.danger = 0;
-        if (round.left <= 0) { endRound('time'); return; }
-        if (round.danger >= CONFIG.dangerMs) { endRound('overflow'); return; }
-      }
-    }
-  }
-  const k = Math.min(1, dt / 16.67);
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx * k * 16;
-    p.y += p.vy * k * 16;
-    p.vy += 0.004 * k;
-    p.life -= p.decay * k;
-    if (p.life <= 0) particles.splice(i, 1);
-  }
-  for (let i = floaters.length - 1; i >= 0; i--) {
-    floaters[i].y -= 0.4 * k;
-    floaters[i].life -= 0.02 * k;
-    if (floaters[i].life <= 0) floaters.splice(i, 1);
-  }
-  bins.forEach(b => {
-    b.glow = Math.max(0, b.glow - 0.02 * k);
-    b.flash = Math.max(0, b.flash - 0.03 * k);
-    b.shake = Math.max(0, b.shake - 0.04 * k);
-  });
-}
-
-let acc = 0, last = performance.now();
-function frame(t) {
-  const dt = Math.min(48, Math.max(0, t - last));
-  last = t;
-  acc += dt;
-  let guard = 0;
-  const budget = speed === 2 ? 5 : 3;
-  while (acc >= CONFIG.step && guard < budget) {
-    stepSim(CONFIG.step);
-    acc -= CONFIG.step;
-    guard++;
-  }
-  if (guard === budget) acc = 0;
-  renderFrame(t);
-  if (xray && layers.xray) Render.lookAt(xray, visibleBounds(), { x: 0, y: 0 }, true);
-  updateHUD();
-  if ((frame.n = (frame.n || 0) + 1) % 8 === 0) updateLive();
-  requestAnimationFrame(frame);
 }
 
 function pickCard(p) {
@@ -1259,13 +347,13 @@ function pickCard(p) {
   let best = null, bestD = 1e12;
   for (let i = 0; i < hits.length; i++) {
     const b = hits[i];
-    const d = (b.position.x - p.x) ** 2 + (b.position.y - p.y) ** 2;
+    const d = (b.position.x - p.x) * (b.position.x - p.x) + (b.position.y - p.y) * (b.position.y - p.y);
     if (d < bestD) { bestD = d; best = b; }
   }
   return best;
 }
-art.addEventListener('pointerdown', e => {
-  if (phase === 'summary' || $('intro').classList.contains('show') || $('help').classList.contains('show')) return;
+
+art.addEventListener('pointerdown', function (e) {
   art.setPointerCapture(e.pointerId);
   const sp = localXY(e);
   const p = screenToWorld(sp.x, sp.y);
@@ -1283,12 +371,11 @@ art.addEventListener('pointerdown', e => {
     label: 'grab'
   });
   Composite.add(world, constraint);
-  drag = { constraint, body, pointerId: e.pointerId, px: p.x, py: p.y, vx: 0, vy: 0, t: performance.now() };
+  drag = { constraint: constraint, body: body, pointerId: e.pointerId, px: p.x, py: p.y, vx: 0, vy: 0, t: performance.now() };
   stage.classList.add('grabbing');
-  speak(body.lingo.speak || body.lingo.text);
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 });
-art.addEventListener('pointermove', e => {
+
+window.addEventListener('pointermove', function (e) {
   if (!drag || e.pointerId !== drag.pointerId) return;
   const sp = localXY(e);
   const p = screenToWorld(sp.x, sp.y);
@@ -1296,475 +383,171 @@ art.addEventListener('pointermove', e => {
   const dt = Math.max(8, now - drag.t);
   drag.vx = (p.x - drag.px) / dt;
   drag.vy = (p.y - drag.py) / dt;
-  drag.px = p.x; drag.py = p.y; drag.t = now;
+  drag.px = p.x;
+  drag.py = p.y;
+  drag.t = now;
   drag.constraint.pointA.x = p.x;
   drag.constraint.pointA.y = p.y;
   Sleeping.set(drag.body, false);
 });
+
 function endDrag(e) {
   if (!drag) return;
   if (e && e.pointerId !== drag.pointerId) return;
   const body = drag.body;
   const vx = drag.vx, vy = drag.vy;
-  const sp = Math.hypot(vx, vy);
   Composite.remove(world, drag.constraint);
   drag = null;
   stage.classList.remove('grabbing');
-  if (sp > 0.18) {
+  if (Math.hypot(vx, vy) > 0.18) {
     Sleeping.set(body, false);
     Body.setVelocity(body, { x: vx * CONFIG.fling, y: vy * CONFIG.fling });
     Body.setAngularVelocity(body, vx * 0.004);
   }
 }
-art.addEventListener('pointerup', endDrag);
-art.addEventListener('pointercancel', endDrag);
+window.addEventListener('pointerup', endDrag);
+window.addEventListener('pointercancel', endDrag);
 
-function showToast(text, ok) {
-  const el = $('toast');
-  el.textContent = text;
-  el.classList.toggle('ok', !!ok);
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), ok ? 1600 : 4200);
-}
-function chime(ok) {
-  try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const t0 = audioCtx.currentTime;
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(ok ? 523 : 196, t0);
-    o.frequency.exponentialRampToValueAtTime(ok ? 784 : 130, t0 + 0.16);
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.07, t0 + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(t0); o.stop(t0 + 0.34);
-  } catch (err) { /* audio is optional */ }
-}
-function bestVoice(lang) {
-  if (!window.speechSynthesis) return null;
-  const voices = speechSynthesis.getVoices();
-  const pref = lang === 'es' ? ['es-ES', 'es-MX', 'es-US', 'es'] : ['fr-FR', 'fr-CA', 'fr'];
-  for (let i = 0; i < pref.length; i++) {
-    const hit = voices.find(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith(pref[i].toLowerCase()));
-    if (hit) return hit;
-  }
-  return null;
-}
-function refreshSpeech() {
-  const voice = bestVoice(activeLang());
-  const box = $('speechBox');
-  if (!voice) { box.hidden = true; return; }
-  box.hidden = false;
-}
-function speak(text) {
-  if (!speechOn || !window.speechSynthesis) return;
-  const voice = bestVoice(activeLang());
-  if (!voice) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.voice = voice;
-  u.lang = voice.lang || (activeLang() === 'es' ? 'es-ES' : 'fr-FR');
-  u.rate = speechRate;
-  speechSynthesis.cancel();
-  speechSynthesis.speak(u);
-}
-if (window.speechSynthesis) {
-  speechSynthesis.onvoiceschanged = refreshSpeech;
-  refreshSpeech();
+function roundRect(x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
 }
 
-function clock(ms) {
-  const s = Math.max(0, Math.round(ms / 1000));
-  const m = Math.floor(s / 60);
-  return m + ':' + String(s % 60).padStart(2, '0');
-}
-function accuracy() {
-  const n = round.correct + round.wrong;
-  if (!n) return null;
-  return round.correct / n;
-}
-function updateHUD() {
-  const s = SCENARIOS[scenarioIndex];
-  const langName = activeLang() === 'es' ? 'Español' : 'Français';
-  let sub = 'Fling each card into the matching bin';
-  if (phase === 'play' && round.danger > 400) sub = 'The pile is over the line';
-  if (phase === 'summary') sub = round.reason === 'overflow' ? 'The pile overflowed' : round.reason === 'time' ? 'Time is up' : 'Round ended';
-  $('caption').innerHTML = esc(s.name) + '<small>' + sub + '</small>';
-  const acc = phase === 'intro' || !round ? '—' : (accuracy() == null ? '—' : Math.round(accuracy() * 100) + '%');
-  const timeBit = !round || phase === 'intro' ? '—' : practice ? clock(round.elapsed) : clock(round.left);
-  const combo = !round || phase === 'intro' ? '×1' : '×' + Math.max(1, round.combo || (round.streak ? round.combo : 1));
-  $('hudTR').innerHTML = langName + '<br>score <b>' + (round && phase !== 'intro' ? round.score : 0) + '</b><br>combo <b>' + (phase === 'intro' ? '×1' : combo) + '</b><br>' + (practice && phase === 'play' ? 'practice ' : 'time ') + '<b>' + timeBit + '</b><br>acc <b>' + acc + '</b>';
-  $('hudB').textContent = practice && phase === 'play'
-    ? 'Practice · no overflow, no clock'
-    : 'Grab a card and fling it into the matching bin';
-}
-function updateLive() {
-  if (!round || phase === 'intro') {
-    $('lvScore').textContent = '0';
-    $('lvCombo').textContent = '×1';
-    $('lvAcc').textContent = '—';
-    $('lvSorted').textContent = '0';
-    $('lvBest').textContent = '0';
-    $('lvBins').textContent = 'Start a round to fill the bins.';
-    $('lvBins').className = 'small muted';
-    return;
-  }
-  $('lvScore').textContent = String(round.score);
-  $('lvCombo').textContent = '×' + Math.max(1, round.combo || 1);
-  $('lvAcc').textContent = accuracy() == null ? '—' : Math.round(accuracy() * 100) + '%';
-  $('lvSorted').textContent = String(round.correct);
-  $('lvBest').textContent = String(round.best);
-  if (!bins.length) return;
-  $('lvBins').className = '';
-  $('lvBins').innerHTML = bins.map(b => {
-    const n = b.ok + b.bad;
-    const pct = n ? Math.round(100 * b.ok / n) : 0;
-    return '<div class="binrow"><span>' + esc(b.label) + '</span><span class="mono">' + (n ? pct + '%' : '—') + '</span><div class="bar"><i style="width:' + (n ? pct : 0) + '%"></i></div></div>';
-  }).join('');
-}
-
-function loadScenario(index, live) {
-  scenarioIndex = index;
-  const content = currentContent();
-  $('listErr').textContent = content.error || '';
-  applyAccent(content.lang);
-  if (content.error) {
-    deck = [];
-    bag = [];
-    if (!layout) buildArena(genderBins('es'));
-    renderScenarios();
-    refreshSpeech();
-    return;
-  }
-  deck = content.items;
-  bag = [];
-  buildArena(content.binsMeta);
-  spawnAcc = 0;
-  simMs = 0;
-  particles = [];
-  floaters = [];
-  if (live) {
-    phase = 'play';
-    freshRound();
-    $('intro').classList.remove('show');
-    $('summary').classList.remove('show');
-    for (let i = 0; i < 2; i++) spawnCard();
-  } else if (phase !== 'summary') {
-    phase = 'intro';
-    freshRound();
-  }
-  renderScenarios();
-  refreshSpeech();
-  updateHUD();
-}
-function startRound() {
-  const s = SCENARIOS[scenarioIndex];
-  if (s.mode === 'list') {
-    const parsed = parseList($('listText').value);
-    if (parsed.binsMeta.length < 2 || parsed.binsMeta.length > 6 || parsed.items.length < 2) {
-      $('listErr').textContent = 'Need 2 to 6 bins and at least two cards. Use word | bin | hint.';
-      showToast('Check the teacher list: word | bin | hint, and 2 to 6 bins.', false);
-      return;
-    }
-  }
-  loadScenario(scenarioIndex, true);
-}
-function endRound(reason) {
-  if (phase !== 'play') return;
-  phase = 'summary';
-  round.reason = reason || 'ended';
-  const acc = accuracy();
-  $('sumEyebrow').textContent = SCENARIOS[scenarioIndex].name;
-  $('sumTitle').textContent = reason === 'overflow' ? 'The pile overflowed' : reason === 'time' ? 'Time' : 'Round complete';
-  $('sumAcc').textContent = acc == null ? '—' : Math.round(acc * 100) + '%';
-  $('sumTime').textContent = clock(round.elapsed);
-  $('sumStreak').textContent = String(round.best);
-  $('sumSorted').textContent = String(round.correct);
-  $('review').innerHTML = round.review.length
-    ? round.review.map(r => '<li>' + esc(r) + '</li>').join('')
-    : '<li>Nothing to review. Clean round.</li>';
-  $('summary').classList.add('show');
-}
-function resultsText() {
-  const s = SCENARIOS[scenarioIndex];
-  const acc = accuracy();
-  const lines = [
-    'Lingo Drop — ' + s.name,
-    'Accuracy: ' + (acc == null ? '—' : Math.round(acc * 100) + '%'),
-    'Time: ' + clock(round.elapsed),
-    'Best streak: ' + round.best,
-    'Cards sorted: ' + round.correct,
-    'Score: ' + round.score,
-    '',
-    'Words to review:'
-  ];
-  if (!round.review.length) lines.push('Nothing to review.');
-  else round.review.forEach(r => lines.push('• ' + r));
-  return lines.join('\n');
-}
-function copyResults() {
-  const text = resultsText();
-  const done = () => showToast('Results copied.', true);
-  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
-  else fallbackCopy(text, done);
-}
-function fallbackCopy(text, done) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.left = '-999px';
-  document.body.appendChild(ta);
-  ta.select();
-  try { document.execCommand('copy'); } catch (e) { /* ignore */ }
-  ta.remove();
-  done();
-}
-function shakeTray() {
-  for (let i = 0; i < cards.length; i++) {
-    const c = cards[i];
-    Sleeping.set(c, false);
-    Body.setVelocity(c, {
-      x: c.velocity.x + (Math.random() - 0.5) * CONFIG.shake * 0.08,
-      y: c.velocity.y - Math.random() * CONFIG.shake * 0.06
-    });
-    Body.setAngularVelocity(c, (Math.random() - 0.5) * 0.01);
-  }
-}
-
-function renderScenarios() {
-  $('scenList').innerHTML = SCENARIOS.map((s, i) =>
-    '<button type="button" data-i="' + i + '" class="' + (i === scenarioIndex ? 'on' : '') + '" aria-pressed="' + (i === scenarioIndex) + '" aria-label="Load ' + esc(s.name) + '"><span class="k">' + (i + 1) + '</span><span class="t">' + esc(s.name) + '</span></button>'
-  ).join('');
-  document.querySelectorAll('#listLang button').forEach(b => {
-    const on = b.dataset.lang === listLang;
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
-  });
-}
-function segFill(el, options, current, onPick) {
-  el.innerHTML = options.map(o => '<button type="button" data-v="' + o.v + '" class="' + (o.v === current ? 'on' : '') + '" aria-pressed="' + (o.v === current) + '">' + o.t + '</button>').join('');
-  el.onclick = e => {
-    const b = e.target.closest('button');
-    if (!b) return;
-    onPick(b.dataset.v);
-    segFill(el, options, b.dataset.v, onPick);
-  };
-}
-function paintRange(el) {
-  const p = (Number(el.value) - Number(el.min)) / (Number(el.max) - Number(el.min)) * 100;
-  el.style.setProperty('--p', p + '%');
-}
-
-const LAYER_DEFS = [
-  { id: 'scene', name: 'Scene', desc: 'Language gradient, drifting accents, glass bins', fixed: true },
-  { id: 'hints', name: 'Hints', desc: 'English meaning on each card', key: 'H' },
-  { id: 'heat', name: 'Heat', desc: 'Tint bins by the class accuracy', key: 'E' },
-  { id: 'xray', name: 'X-ray', desc: 'Matter.js bodies, contacts, and sleep', key: 'X' }
-];
-function renderLayers() {
-  const html = LAYER_DEFS.map(l => {
-    const on = l.fixed ? true : !!layers[l.id];
-    return '<button class="tog" role="switch" aria-checked="' + on + '" ' + (l.fixed ? 'aria-disabled="true"' : '') + ' data-l="' + l.id + '" aria-label="Toggle ' + l.name + ' layer"><span class="sw"></span><span class="lbl">' + l.name + '<small>' + l.desc + '</small></span>' + (l.key ? '<kbd>' + l.key + '</kbd>' : '') + '</button>';
-  }).join('');
-  $('layerList').innerHTML = html;
-  $('layersPop').innerHTML = html;
-}
-function setXray(on) {
-  layers.xray = on;
-  xrayCanvas.classList.toggle('on', on);
-  if (on) {
-    if (!xray) {
-      xray = Render.create({
-        engine,
-        options: {
-          width: Math.max(1, Math.round(W)),
-          height: Math.max(1, Math.round(H)),
-          pixelRatio: DPR,
-          wireframes: true,
-          background: 'transparent',
-          wireframeBackground: 'transparent',
-          showVelocity: true,
-          showCollisions: true,
-          showAngleIndicator: true,
-          showSleeping: true,
-          hasBounds: true
-        }
-      });
-      xray.canvas = xrayCanvas;
-      xray.context = xrayCanvas.getContext('2d');
-      xray.options.pixelRatio = DPR;
-      Render.setSize(xray, W, H);
-    }
-    Render.lookAt(xray, visibleBounds(), { x: 0, y: 0 }, true);
-    if (!xrayRunning) { Render.run(xray); xrayRunning = true; }
-  } else if (xray && xrayRunning) {
-    Render.stop(xray);
-    xrayRunning = false;
-    xray.context.clearRect(0, 0, xrayCanvas.width, xrayCanvas.height);
-  }
-  renderLayers();
-}
-function toggleLayer(id) {
-  if (id === 'scene' || !(id in layers)) return;
-  if (id === 'xray') setXray(!layers.xray);
-  else { layers[id] = !layers[id]; renderLayers(); }
-}
-
-const LESSON = [
-  ['How to run it', 'Project the lab. One student flings at the board while the class calls the bin, or teams take one-minute turns. Start in Practice, then play a 60-second round. Hints (H) help a new unit. Heat (E) shows the bin the class is missing. Paste today\'s list when the textbook set is the one you want.'],
-  ['Español · Themes', 'Four themes are drawn each round from la comida, la familia, la ropa, la casa, el cuerpo, and los colores. Sorting them builds recall. The article travels with the noun, so students say the whole word as they pick the card up.'],
-  ['Español · Gender', 'Every noun is masculine or feminine. Most nouns in -o are masculine and most in -a are feminine, but el día, el mapa, el problema, and la mano break that pattern. A feminine noun that begins with a stressed a takes el in the singular and stays feminine: el agua, las aguas.'],
-  ['Español · Verbs', 'Present-tense endings name the subject. -ar: o, as, a, amos, áis, an. -er: o, es, e, emos, éis, en. -ir: o, es, e, imos, ís, en. ser, estar, tener, and ir are irregular. Vosotros is the form used in Spain. In much of Latin America, ustedes covers that meaning and shares the ellos ending.'],
-  ['Français · Themes', 'Four themes are drawn from la nourriture, la famille, les vêtements, la maison, le corps, and les couleurs. The article is part of the word: students should hear le, la, or l\' with the noun.'],
-  ['Français · Gender', 'Every noun is masculine or feminine, and the ending is only a hint. le musée, le lycée, and le problème are masculine; la main, la mer, and la fin are feminine. Learn the article with the noun.'],
-  ['Français · Verbs', 'Present-tense endings follow the subject. Regular -er verbs take e, es, e, ons, ez, ent, and je and il/elle/on share a form. Regular -ir verbs like finir take is, is, it, issons, issez, issent, and je and tu share a form. Regular -re verbs take s, s, no ending, ons, ez, ent, and je and tu share a form. être, avoir, aller, and faire are irregular. A card that fits two bins counts in either one.']
-];
-
-function initUI() {
-  $('lessonBox').innerHTML = LESSON.map(([h, p]) => '<div class="card"><h4>' + h + '</h4><p>' + p + '</p></div>').join('');
-  $('modList').innerHTML = [
-    ['Engine', 'Steps the world at a fixed 1/60 s, with a second substep when speed is 2×.'],
-    ['Bodies', 'Builds each card as a chamfered rectangle sized to the word, and the wall pieces of each bin.'],
-    ['Body', 'Glues two walls and a floor into a compound bin, and sets velocity, spin, and sleep.'],
-    ['Composite', 'Adds and removes cards, bins, and the grab spring.'],
-    ['Constraint', 'The spring from the pointer to the card you are holding. Releasing mid-fling keeps the speed.'],
-    ['Events', 'collisionStart fires when a card reaches the sensor inside a bin.'],
-    ['Query', 'Query.point finds the card under the pointer, including in the corners.'],
-    ['Sleeping', 'Settled cards fall asleep so a quiet pile stops twitching.'],
-    ['Vector', 'Turns the grab point into the card\'s local coordinates and aims a wrong-answer kick.'],
-    ['Render', 'The X-ray layer: wireframes, velocity, collisions, angle, and sleeping, aligned with Render.lookAt.']
-  ].map(([m, d]) => '<li><code>Matter.' + m + '</code> · ' + d + '</li>').join('');
-  const KEYS = [
-    ['Drag', 'Grab a card'],
-    ['Release while moving', 'Fling it'],
-    ['S', 'Shake the tray'],
-    ['H', 'Hints layer'],
-    ['E', 'Heat layer'],
-    ['X', 'X-ray layer'],
-    ['P', 'Present mode'],
-    ['1 – 9', 'Load a scenario'],
-    ['?', 'This help'],
-    ['Esc', 'Close overlays']
-  ];
-  $('keyList').innerHTML = KEYS.map(([k, d]) => '<kbd>' + k + '</kbd><span>' + d + '</span>').join('');
-  try { $('listText').value = localStorage.getItem(LIST_KEY) || LIST_DEFAULT; }
-  catch (e) { $('listText').value = LIST_DEFAULT; }
-  renderScenarios();
-  renderLayers();
-  segFill($('timeSeg'), [{ v: '60', t: '60s' }, { v: '120', t: '120s' }, { v: 'practice', t: 'Practice' }], '60', v => {
-    practice = v === 'practice';
-    roundLen = v === '120' ? 120 : 60;
-    $('timeV').textContent = practice ? '∞' : roundLen + 's';
-  });
-  segFill($('speedSeg'), [{ v: '1', t: '1×' }, { v: '2', t: '2×' }], '1', v => {
-    speed = Number(v);
-    $('speedV').textContent = speed + '×';
-  });
-  paintRange($('gravS'));
-  paintRange($('rateS'));
-  document.querySelectorAll('.sec-h').forEach(btn => {
-    btn.addEventListener('click', () => btn.parentElement.classList.toggle('closed'));
+function drawBins() {
+  bins.forEach(function (bin) {
+    const x = bin.minX, y = bin.minY, w = bin.maxX - bin.minX, h = bin.maxY - bin.minY;
+    ctx.save();
+    if (bin.flash > 0) ctx.translate((Math.random() - 0.5) * 6 * bin.flash, 0);
+    roundRect(x + 8, y + 8, w - 16, h - 16, 22);
+    ctx.fillStyle = bin.flash > 0.2 ? 'rgba(244,63,94,0.16)' : 'rgba(255,255,255,0.04)';
+    ctx.fill();
+    ctx.lineWidth = bin.glow > 0.05 ? 3 : 1.5;
+    ctx.strokeStyle = bin.glow > 0.05
+      ? 'rgba(250,204,21,' + (0.35 + bin.glow * 0.65) + ')'
+      : 'rgba(255,255,255,0.18)';
+    ctx.stroke();
+    ctx.fillStyle = '#E8EDF6';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '700 28px Inter, sans-serif';
+    const lx = bin.side === 'left' ? x + w * 0.38 : x + w * 0.62;
+    ctx.fillText(bin.label, lx, y + h * 0.46);
+    ctx.font = '500 14px Inter, sans-serif';
+    ctx.fillStyle = '#8A94A7';
+    ctx.fillText(bin.sub, lx, y + h * 0.46 + 28);
+    ctx.restore();
   });
 }
 
-$('scenList').addEventListener('click', e => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  const live = phase === 'play';
-  loadScenario(Number(b.dataset.i), live);
-});
-$('listLang').addEventListener('click', e => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  listLang = b.dataset.lang;
-  renderScenarios();
-  if (SCENARIOS[scenarioIndex].mode === 'list') loadScenario(scenarioIndex, phase === 'play');
-  else { applyAccent(activeLang()); refreshSpeech(); }
-});
-$('listText').addEventListener('input', () => {
-  try { localStorage.setItem(LIST_KEY, $('listText').value); } catch (e) { /* private mode */ }
-  if (SCENARIOS[scenarioIndex].mode === 'list' && phase !== 'play') loadScenario(scenarioIndex, false);
-});
-$('gravS').addEventListener('input', () => {
-  paintRange($('gravS'));
-  engine.gravity.y = Number($('gravS').value);
-  $('gravV').textContent = Number($('gravS').value).toFixed(2) + '×';
-});
-$('rateS').addEventListener('input', () => {
-  paintRange($('rateS'));
-  speechRate = Number($('rateS').value);
-  $('rateV').textContent = speechRate.toFixed(2);
-});
-$('speechTog').addEventListener('click', () => {
-  speechOn = !speechOn;
-  $('speechTog').setAttribute('aria-checked', speechOn ? 'true' : 'false');
-});
-$('btnShake').addEventListener('click', shakeTray);
-$('btnGo').addEventListener('click', startRound);
-$('btnStart').addEventListener('click', startRound);
-$('btnEnd').addEventListener('click', () => { if (phase === 'play') endRound('ended'); });
-$('btnAgain').addEventListener('click', startRound);
-$('btnCopy').addEventListener('click', copyResults);
-$('btnHelp').addEventListener('click', () => $('help').classList.toggle('show'));
-$('btnHelpClose').addEventListener('click', () => $('help').classList.remove('show'));
-function togglePresent() {
-  document.body.classList.toggle('present');
-  const on = document.body.classList.contains('present');
-  $('btnPresent').classList.toggle('on', on);
-  $('btnPresent').setAttribute('aria-pressed', on ? 'true' : 'false');
-  setTimeout(resize, 260);
+function drawCards() {
+  cards.forEach(function (b) {
+    const L = b.lingo;
+    ctx.save();
+    ctx.translate(b.position.x, b.position.y);
+    ctx.rotate(b.angle);
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetY = 8;
+    roundRect(-L.w / 2, -L.h / 2, L.w, L.h, 14);
+    const g = ctx.createLinearGradient(0, -L.h / 2, 0, L.h / 2);
+    g.addColorStop(0, 'rgba(253,186,116,0.96)');
+    g.addColorStop(0.5, 'rgba(249,115,22,0.94)');
+    g.addColorStop(1, 'rgba(124,45,18,0.96)');
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.save();
+    roundRect(-L.w / 2, -L.h / 2, L.w, L.h, 14);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillRect(-L.w / 2, -L.h / 2, L.w, L.h * 0.42);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    roundRect(-L.w / 2, -L.h / 2, L.w, L.h, 14);
+    ctx.stroke();
+    ctx.fillStyle = '#1C120C';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '700 26px Inter, sans-serif';
+    ctx.fillText(L.text, 0, 1);
+    ctx.restore();
+  });
 }
-$('btnPresent').addEventListener('click', togglePresent);
-$('btnLayers').addEventListener('click', e => {
-  e.stopPropagation();
-  const pop = $('layersPop');
-  pop.classList.toggle('show');
-  $('btnLayers').classList.toggle('on', pop.classList.contains('show'));
-  $('btnLayers').setAttribute('aria-expanded', pop.classList.contains('show') ? 'true' : 'false');
-});
-document.addEventListener('click', e => {
-  if (!e.target.closest('#layersPop') && !e.target.closest('#btnLayers')) {
-    $('layersPop').classList.remove('show');
-    $('btnLayers').classList.remove('on');
-    $('btnLayers').setAttribute('aria-expanded', 'false');
-  }
-});
-[$('layerList'), $('layersPop')].forEach(el => el.addEventListener('click', e => {
-  const b = e.target.closest('.tog');
-  if (b && b.getAttribute('aria-disabled') !== 'true') toggleLayer(b.dataset.l);
-}));
 
-window.addEventListener('keydown', e => {
-  const tag = (e.target.tagName || '').toLowerCase();
-  if (tag === 'textarea' || tag === 'input') return;
-  if (e.metaKey || e.ctrlKey || e.altKey) return;
-  if (e.key === 'Escape') {
-    $('help').classList.remove('show');
-    $('layersPop').classList.remove('show');
-    $('btnLayers').classList.remove('on');
-    return;
+function drawGrab() {
+  if (!drag) return;
+  ctx.beginPath();
+  ctx.moveTo(drag.px, drag.py);
+  ctx.lineTo(drag.body.position.x, drag.body.position.y);
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function renderFrame() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const bg = ctx.createRadialGradient(W * 0.32, H * 0.38, 40, W * 0.32, H * 0.38, Math.max(W, H) * 0.7);
+  bg.addColorStop(0, '#1A120C');
+  bg.addColorStop(1, '#070A12');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.setTransform(
+    fit * DPR, 0, 0, fit * DPR,
+    (W / 2 - (CONFIG.worldW / 2) * fit) * DPR,
+    (H / 2 - (CONFIG.worldH / 2) * fit) * DPR
+  );
+  if (layout) {
+    drawBins();
+    drawCards();
+    drawGrab();
   }
-  if (e.key === '?' ) { $('help').classList.toggle('show'); return; }
-  const k = e.key.toLowerCase();
-  if (k === 'p') togglePresent();
-  else if (k === 'h') toggleLayer('hints');
-  else if (k === 'e') toggleLayer('heat');
-  else if (k === 'x') toggleLayer('xray');
-  else if (k === 's') shakeTray();
-  else if (k >= '1' && k <= '9') {
-    const i = Number(k) - 1;
-    if (SCENARIOS[i]) loadScenario(i, phase === 'play');
+}
+
+function resize() {
+  const r = stage.getBoundingClientRect();
+  W = Math.max(1, r.width);
+  H = Math.max(1, r.height);
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  fit = Math.min(W / CONFIG.worldW, H / CONFIG.worldH);
+  art.width = Math.floor(W * DPR);
+  art.height = Math.floor(H * DPR);
+}
+
+let acc = 0;
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(48, Math.max(0, t - last));
+  last = t;
+  acc += dt;
+  let guard = 0;
+  while (acc >= CONFIG.step && guard < 3) {
+    stepSim();
+    acc -= CONFIG.step;
+    guard++;
   }
-});
+  if (guard === 3) acc = 0;
+  const k = Math.min(1, dt / 16.67);
+  bins.forEach(function (b) {
+    b.glow = Math.max(0, b.glow - 0.02 * k);
+    b.flash = Math.max(0, b.flash - 0.04 * k);
+  });
+  renderFrame();
+  requestAnimationFrame(frame);
+}
+
+document.getElementById('btnReset').addEventListener('click', resetRound);
 window.addEventListener('resize', resize);
-
-initUI();
-freshRound();
-loadScenario(0, false);
-$('intro').classList.add('show');
 resize();
+resetRound();
 requestAnimationFrame(frame);
 </script>
 </body>
