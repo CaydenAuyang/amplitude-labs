@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orbit Lab · Amplitude Labs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070A12; --text: #E8EDF6; --muted: #8A94A7;
+    --glass: rgba(255,255,255,0.04); --line: rgba(255,255,255,0.08);
+    --accent: #8B5CF6; --accent2: #22D3EE; --good: #34D399; --warn: #FB923C;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    font-family: Inter, system-ui, sans-serif; color: var(--text); background: var(--bg);
+    background-image: radial-gradient(1200px 700px at 30% 40%, rgba(139,92,246,0.14), transparent 70%),
+                      radial-gradient(800px 500px at 90% 100%, rgba(34,211,238,0.06), transparent 70%);
+    font-size: 14px; -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+  .mono { font-family: var(--mono); }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    height: 56px; display: flex; align-items: center; gap: 14px; padding: 0 16px;
+    border-bottom: 1px solid var(--line); background: rgba(7,10,18,0.6);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); position: relative; z-index: 20;
+  }
+  .back { color: var(--muted); text-decoration: none; font-weight: 500; font-size: 13px; padding: 6px 10px; border-radius: 8px; transition: color .2s, background .2s; }
+  .back:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+  .divider { width: 1px; height: 22px; background: var(--line); }
+  .labname { font-weight: 700; font-size: 17px; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; }
+  .logo { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, #FDE68A 25%, #F59E0B 55%, transparent 60%); box-shadow: 0 0 14px rgba(245,158,11,.6); position: relative; }
+  .logo::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 1.5px solid rgba(139,92,246,.7); transform: rotateX(65deg) rotate(-20deg); }
+  .pill { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; color: #C4B5FD; border: 1px solid rgba(139,92,246,.45); background: rgba(139,92,246,.12); }
+  .spacer { flex: 1; }
+  .tbtn {
+    display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 10px;
+    background: var(--glass); border: 1px solid var(--line); cursor: pointer; font-size: 13px; font-weight: 500;
+    transition: background .18s, border-color .18s, transform .18s;
+  }
+  .tbtn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.16); }
+  .tbtn:active { transform: translateY(1px); }
+  .tbtn.on { border-color: rgba(139,92,246,.6); background: rgba(139,92,246,.16); }
+  kbd { font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,0.08); border: 1px solid var(--line); color: var(--muted); }
+
+  /* ---------- layout ---------- */
+  .app { position: absolute; top: 56px; left: 0; right: 0; bottom: 0; display: flex; }
+  #stage { position: relative; flex: 1; min-width: 0; overflow: hidden; cursor: crosshair; }
+  #stage canvas { position: absolute; left: 0; top: 0; }
+  #xray { pointer-events: none; display: none; }
+  #xray.on { display: block; }
+  #sidebar {
+    width: 340px; flex: none; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+    border-left: 1px solid var(--line); background: rgba(7,10,18,0.35); transition: margin-right .25s ease, opacity .25s;
+    scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.12) transparent;
+  }
+  body.present #sidebar { margin-right: -340px; opacity: 0; pointer-events: none; }
+
+  /* ---------- glass sections ---------- */
+  .sec { background: var(--glass); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); flex: none; }
+  .sec-h { width: 100%; display: flex; align-items: center; justify-content: space-between; background: none; border: 0; padding: 12px 14px; cursor: pointer; font-weight: 600; font-size: 13px; letter-spacing: .02em; border-radius: 14px; transition: background .18s; }
+  .sec-h:hover { background: rgba(255,255,255,0.03); }
+  .sec-h .chev { color: var(--muted); transition: transform .2s; font-size: 11px; }
+  .sec.closed .chev { transform: rotate(-90deg); }
+  .sec-b { padding: 0 14px 14px; }
+  .sec.closed .sec-b { display: none; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12px; line-height: 1.5; }
+
+  /* scenarios */
+  .scen { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .scen button {
+    display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 10px; border-radius: 10px; cursor: pointer;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--line); transition: background .18s, border-color .18s;
+  }
+  .scen button:hover { background: rgba(255,255,255,0.06); }
+  .scen button.on { border-color: rgba(139,92,246,.6); background: rgba(139,92,246,.12); }
+  .scen .k { font-family: var(--mono); font-size: 11px; width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; background: rgba(255,255,255,0.06); color: var(--muted); flex: none; }
+  .scen .t { font-size: 13px; font-weight: 500; }
+
+  /* sliders */
+  .ctl { margin: 10px 0 14px; }
+  .ctl-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; font-size: 12.5px; }
+  .ctl-top .v { font-family: var(--mono); font-size: 12px; color: #C4B5FD; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) var(--p, 50%), rgba(255,255,255,0.1) var(--p, 50%)); }
+  input[type=range]::-moz-range-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) var(--p, 50%), rgba(255,255,255,0.1) var(--p, 50%)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; margin-top: -6px; box-shadow: 0 0 0 4px rgba(139,92,246,.25), 0 2px 8px rgba(0,0,0,.5); transition: box-shadow .18s, transform .18s; }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(139,92,246,.25); }
+  input[type=range]:hover::-webkit-slider-thumb { box-shadow: 0 0 0 6px rgba(139,92,246,.35), 0 2px 8px rgba(0,0,0,.5); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.12); }
+  input[type=range]:focus-visible { outline: none; }
+  input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 6px rgba(34,211,238,.45); }
+
+  /* segmented */
+  .seg { display: flex; padding: 3px; gap: 2px; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--line); }
+  .seg button { flex: 1; height: 28px; border: 0; background: transparent; border-radius: 7px; cursor: pointer; font-family: var(--mono); font-size: 12px; color: var(--muted); transition: background .18s, color .18s; }
+  .seg button:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+  .seg button.on { color: #fff; background: linear-gradient(135deg, rgba(139,92,246,.75), rgba(34,211,238,.45)); }
+  .row { display: flex; gap: 8px; margin-top: 12px; }
+  .btn { flex: 1; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); cursor: pointer; font-size: 12.5px; font-weight: 500; transition: background .18s, border-color .18s, transform .18s; }
+  .btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,.18); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: linear-gradient(135deg, #8B5CF6, #6D28D9); border-color: transparent; color: #fff; font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.1); }
+
+  /* toggles */
+  .tog { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 4px; background: none; border: 0; cursor: pointer; text-align: left; border-radius: 8px; transition: background .18s; }
+  .tog:hover { background: rgba(255,255,255,0.03); }
+  .tog .sw { width: 32px; height: 18px; border-radius: 9px; background: rgba(255,255,255,0.12); position: relative; transition: background .2s; flex: none; }
+  .tog .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #cfd6e4; transition: transform .2s, background .2s; }
+  .tog[aria-checked=true] .sw { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .tog[aria-checked=true] .sw::after { transform: translateX(14px); background: #fff; }
+  .tog[aria-disabled=true] { opacity: .55; cursor: default; }
+  .tog .lbl { flex: 1; font-size: 13px; }
+  .tog .lbl small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+
+  /* live data */
+  .kv { display: grid; grid-template-columns: 1fr auto; gap: 5px 10px; font-size: 12.5px; }
+  .kv .val { font-family: var(--mono); font-size: 12px; text-align: right; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; font-family: Inter, sans-serif; }
+  .badge.bound { color: var(--good); background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.35); }
+  .badge.esc { color: var(--warn); background: rgba(251,146,60,.12); border: 1px solid rgba(251,146,60,.35); }
+  .sub { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 14px 0 8px; font-weight: 600; }
+  canvas.chart { width: 100%; height: 110px; display: block; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--line); }
+  .legend { display: flex; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  table.kt { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+  table.kt th { font-family: Inter, sans-serif; font-weight: 600; color: var(--muted); font-size: 10.5px; text-align: right; padding: 4px 3px; border-bottom: 1px solid var(--line); }
+  table.kt td { text-align: right; padding: 4px 3px; border-bottom: 1px solid rgba(255,255,255,.04); }
+  table.kt th:first-child, table.kt td:first-child { text-align: left; }
+  table.kt td.ratio { color: #A7F3D0; font-weight: 600; }
+
+  /* lesson */
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; background: rgba(255,255,255,0.02); }
+  .card h4 { margin: 0 0 6px; font-size: 13px; }
+  .card p { margin: 3px 0; font-size: 12px; line-height: 1.5; color: #C5CCDA; }
+  .card b { color: var(--text); font-weight: 600; }
+  .eq { font-family: var(--mono); font-size: 12px; padding: 6px 10px; border-radius: 8px; background: rgba(139,92,246,.08); border: 1px solid rgba(139,92,246,.2); margin: 6px 0; color: #DDD6FE; }
+  ol.qs { margin: 6px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.55; color: #C5CCDA; }
+  ul.mods { list-style: none; padding: 0; margin: 0; font-size: 12px; line-height: 1.45; }
+  ul.mods li { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.04); color: #C5CCDA; }
+  ul.mods code { font-family: var(--mono); color: #67E8F9; font-size: 11.5px; }
+
+  /* ---------- HUD ---------- */
+  .hud { position: absolute; pointer-events: none; z-index: 5; }
+  #hudTL { left: 16px; top: 14px; max-width: 60%; }
+  #caption { font-size: 15px; font-weight: 600; letter-spacing: -.005em; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+  #caption small { display: block; font-weight: 400; color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+  #hudTR { right: 16px; top: 14px; text-align: right; font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.6; }
+  #hudTR b { color: var(--text); font-weight: 500; }
+  #hudB { left: 50%; bottom: 14px; transform: translateX(-50%); font-size: 12px; color: var(--muted); background: rgba(7,10,18,.55); border: 1px solid var(--line); padding: 6px 12px; border-radius: 999px; backdrop-filter: blur(10px); white-space: nowrap; transition: opacity .3s; }
+  body.present #caption { font-size: 26px; }
+  body.present #caption small { font-size: 18px; }
+  body.present #hudTR { font-size: 17px; }
+  body.present #hudB { font-size: 16px; }
+  #toast { position: absolute; left: 50%; top: 70px; transform: translate(-50%, -8px); opacity: 0; transition: opacity .25s, transform .25s; background: rgba(7,10,18,.8); border: 1px solid rgba(139,92,246,.4); padding: 8px 14px; border-radius: 10px; font-size: 13px; z-index: 6; pointer-events: none; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ---------- overlays ---------- */
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; z-index: 30; background: rgba(7,10,18,.35); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+  .modal { width: min(520px, calc(100% - 32px)); max-height: calc(100% - 40px); overflow-y: auto; background: rgba(14,18,30,.82); border: 1px solid rgba(255,255,255,.1); border-radius: 18px; padding: 28px; box-shadow: 0 30px 80px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(139,92,246,.12), 0 0 80px -30px rgba(139,92,246,.6); transform: translateY(8px) scale(.98); transition: transform .25s ease; }
+  .overlay.show .modal { transform: none; }
+  .modal h2 { margin: 6px 0 8px; font-size: 30px; letter-spacing: -.03em; background: linear-gradient(100deg, #fff 20%, #C4B5FD 55%, #67E8F9); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .modal .eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: #A78BFA; }
+  .modal p { color: #B8C1D1; line-height: 1.55; margin: 0 0 16px; }
+  .modal ul.try { margin: 0 0 22px; padding: 0; list-style: none; }
+  .modal ul.try li { padding: 9px 0 9px 28px; position: relative; color: #D5DBE6; line-height: 1.45; border-top: 1px solid rgba(255,255,255,.05); }
+  .modal ul.try li::before { content: ''; position: absolute; left: 4px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, #8B5CF6 60%); box-shadow: 0 0 10px #8B5CF6; }
+  .modal .btn { height: 42px; font-size: 14px; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 13px; align-items: center; }
+  .keys kbd { justify-self: start; font-size: 12px; color: var(--text); }
+  #layersPop { position: absolute; right: 16px; top: 62px; width: 280px; z-index: 25; padding: 10px; background: rgba(14,18,30,.9); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; backdrop-filter: blur(14px); box-shadow: 0 20px 50px -20px rgba(0,0,0,.8); opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .18s, transform .18s; }
+  #layersPop.show { opacity: 1; transform: none; pointer-events: auto; }
+  @media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="back" href="../" aria-label="Back to Amplitude Labs">← Amplitude Labs</a>
+  <span class="divider"></span>
+  <span class="labname"><span class="logo" aria-hidden="true"></span>Orbit Lab</span>
+  <span class="pill">Physics</span>
+  <span class="spacer"></span>
+  <button class="tbtn" id="btnLayers" aria-label="Show layers">Layers</button>
+  <button class="tbtn" id="btnPresent" aria-label="Toggle present mode">Present <kbd>P</kbd></button>
+  <button class="tbtn" id="btnHelp" aria-label="Show help and shortcuts">Help <kbd>?</kbd></button>
+  <div id="layersPop" role="dialog" aria-label="Layers"></div>
+</header>
+
+<div class="app">
+  <div id="stage">
+    <canvas id="art"></canvas>
+    <canvas id="xray"></canvas>
+    <div class="hud" id="hudTL"><div id="caption"></div></div>
+    <div class="hud" id="hudTR"></div>
+    <div class="hud" id="hudB">Drag on empty space to launch a planet · click a body to select it</div>
+    <div id="toast"></div>
+
+    <div class="overlay" id="intro">
+      <div class="modal">
+        <div class="eyebrow">Amplitude Labs · Physics</div>
+        <h2>Orbit Lab</h2>
+        <p>Fling planets around a star and watch Newton's law of gravitation and Kepler's three laws show up live, with real numbers.</p>
+        <ul class="try">
+          <li><b>Slingshot a planet:</b> drag on empty space, pull back, let go. Green path = bound orbit, orange = escape.</li>
+          <li><b>Press 3</b> for four planets, then watch the T² ÷ a³ column settle near 1.00.</li>
+          <li><b>Press K</b> on an ellipse to see equal areas swept in equal times.</li>
+        </ul>
+        <button class="btn primary" id="btnStart" aria-label="Start the lab" style="width:100%">Start</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="help">
+      <div class="modal">
+        <div class="eyebrow">Shortcuts</div>
+        <h2>Help</h2>
+        <div class="keys" id="keyList"></div>
+        <div class="row" style="margin-top:20px"><button class="btn" id="btnHelpClose" aria-label="Close help">Close</button></div>
+      </div>
+    </div>
+  </div>
+
+  <aside id="sidebar" aria-label="Lab controls">
+    <section class="sec" data-sec="scenarios">
+      <button class="sec-h" aria-label="Toggle Scenarios section">Scenarios <span class="chev">▼</span></button>
+      <div class="sec-b"><div class="scen" id="scenList"></div></div>
+    </section>
+
+    <section class="sec" data-sec="controls">
+      <button class="sec-h" aria-label="Toggle Controls section">Controls <span class="chev">▼</span></button>
+      <div class="sec-b">
+        <div class="ctl">
+          <div class="ctl-top"><span>Time warp</span><span class="v" id="warpV">1×</span></div>
+          <div class="seg" id="warpSeg" role="group" aria-label="Time warp"></div>
+        </div>
+        <div class="ctl">
+          <div class="ctl-top"><span>G strength</span><span class="v" id="gV">1.00×</span></div>
+          <input type="range" id="gS" min="0.25" max="2" step="0.05" value="1" aria-label="Gravitational constant multiplier">
+        </div>
+        <div class="ctl">
+          <div class="ctl-top"><span>Star mass</span><span class="v" id="mV">1.00 M☉</span></div>
+          <input type="range" id="mS" min="0.5" max="5" step="0.05" value="1" aria-label="Star mass">
+        </div>
+        <div class="ctl">
+          <div class="ctl-top"><span>Next planet mass</span><span class="v" id="pV">1.0 M♃</span></div>
+          <input type="range" id="pS" min="0" max="100" step="1" value="47" aria-label="Next planet mass">
+        </div>
+        <div class="row">
+          <button class="btn" id="btnClear" aria-label="Clear all planets">Clear</button>
+          <button class="btn" id="btnBelt" aria-label="Add asteroid belt">Add asteroid belt</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" data-sec="layers">
+      <button class="sec-h" aria-label="Toggle Layers section">Layers <span class="chev">▼</span></button>
+      <div class="sec-b" id="layerList"></div>
+    </section>
+
+    <section class="sec" data-sec="live">
+      <button class="sec-h" aria-label="Toggle Live data section">Live data <span class="chev">▼</span></button>
+      <div class="sec-b" id="liveBox"></div>
+    </section>
+
+    <section class="sec closed" data-sec="lesson">
+      <button class="sec-h" aria-label="Toggle Lesson section">Lesson <span class="chev">▼</span></button>
+      <div class="sec-b" id="lessonBox"></div>
+    </section>
+
+    <section class="sec closed" data-sec="hood">
+      <button class="sec-h" aria-label="Toggle Under the hood section">Under the hood <span class="chev">▼</span></button>
+      <div class="sec-b"><ul class="mods" id="modList"></ul></div>
+    </section>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
+<script>
+'use strict';
+// =====================================================================
+// CONFIG: every tunable number lives here.
+// =====================================================================
+const CONFIG = {
+  WORLD_W: 1600, WORLD_H: 900,   // logical world, scaled to fit any screen
+  AU: 200,                       // world px per astronomical unit
+  YEAR_SECONDS: 8,               // real seconds for 1 year at 1x speed
+  STEP_MS: 1000 / 60,            // fixed physics step (never changes)
+  SOFTENING: 3,                  // epsilon in px, stops infinite force at r = 0
+  MAX_BODIES: 80,                // hard cap on bodies
+  MAX_STEPS_PER_FRAME: 64,       // safety cap when the tab lags
+  STAR_RADIUS: 22,               // px for a 1 M☉ star (grows with mass^0.4)
+  JUPITER: 0.000954,             // 1 Jupiter mass in solar masses
+  PLANET_MASS_MIN_MJ: 0.05,      // "next planet mass" slider range, in Jupiter masses
+  PLANET_MASS_MAX_MJ: 30,
+  LAUNCH_PER_PX: 0.025,          // launch speed (px/step) per world px of pull
+  TRAIL_LENGTH: 260,             // points kept per trail
+  TRAIL_EVERY: 2,                // record a trail point every N physics steps
+  BELT_COUNT: 46,                // asteroids added by "Add asteroid belt"
+  BELT_INNER_AU: 2.1, BELT_OUTER_AU: 2.9,
+  BACKGROUND_STARS: [140, 90, 50],     // stars per parallax layer (far → near)
+  PARALLAX: [0.04, 0.12, 0.28],
+  WARPS: [0, 0.5, 1, 2, 4, 8],
+};
+
+const { Engine, Composite, Bodies, Body, Events, Query, Render, Constraint, Vector } = Matter;
+
+// ---------- units ----------
+const STEP = CONFIG.STEP_MS;
+const STEPS_PER_YEAR = CONFIG.YEAR_SECONDS * 1000 / STEP;               // 480
+// G in px^3 / step^2 per solar mass, chosen so a circular 1 AU orbit around 1 M☉ takes 1 year.
+const G0 = 4 * Math.PI * Math.PI * Math.pow(CONFIG.AU, 3) / (STEPS_PER_YEAR * STEPS_PER_YEAR);
+const toAU = px => px / CONFIG.AU;
+const toAUyr = v => v * STEPS_PER_YEAR / CONFIG.AU;                     // px/step → AU/yr
+const KMS_PER_AUYR = 4.7405;
+const EPS2 = CONFIG.SOFTENING * CONFIG.SOFTENING;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- state ----------
+const S = {
+  gMult: 1, starMass: 1, nextMassMJ: 1,
+  warp: 1, lastWarp: 1,
+  simSteps: 0,
+  layers: { trails: true, vectors: false, well: false, sweep: false, xray: false },
+  selected: null, follow: false,
+  scenario: 0,
+  caption: '', captionSub: '',
+};
+const G = () => G0 * S.gMult;
+
+// ---------- engine ----------
+const engine = Engine.create({ enableSleeping: false });
+engine.gravity.scale = 0;
+const world = engine.world;
+let bodies = [];          // our own list in insertion order
+let mergeQueue = [];
+let particles = [];
+let flashes = [];
+let nextId = 1;
+
+const PALETTE = ['#60A5FA', '#34D399', '#F472B6', '#FBBF24', '#A78BFA', '#22D3EE', '#F87171', '#4ADE80', '#C084FC', '#38BDF8'];
+let paletteIdx = 0;
+
+function planetRadius(mSun) {
+  const mj = mSun / CONFIG.JUPITER;
+  return Math.max(3.5, Math.min(16, 5 + 3.2 * Math.cbrt(mj) - 1.5));
+}
+function starRadius(mSun) { return CONFIG.STAR_RADIUS * Math.pow(mSun, 0.4); }
+
+function addBody(o) {
+  if (bodies.length >= CONFIG.MAX_BODIES) { toast('Body cap reached (' + CONFIG.MAX_BODIES + ')'); return null; }
+  const kind = o.kind || 'planet';
+  const r = o.r || (kind === 'star' ? starRadius(o.m) : kind === 'asteroid' ? 1.6 + Math.random() * 1.4 : planetRadius(o.m));
+  const b = Bodies.circle(o.x, o.y, r, {
+    isSensor: true, frictionAir: 0, friction: 0, frictionStatic: 0, restitution: 0,
+    label: o.name || kind,
+    collisionFilter: kind === 'asteroid' ? { group: -1 } : { group: 0 },
+  });
+  b.orb = {
+    id: nextId++, kind, m: o.m, r,
+    color: o.color || (kind === 'star' ? '#FDBA4D' : kind === 'asteroid' ? '#9CA3AF' : PALETTE[paletteIdx++ % PALETTE.length]),
+    name: o.name || (kind === 'planet' ? 'Planet ' + (nextIdOfKind('planet')) : kind),
+    trail: [], ax: 0, ay: 0, pulse: 0,
+    // orbit bookkeeping (period by angle wraps, apsides for eccentricity)
+    lastAng: null, wraps: 0, lastWrapStep: null, period: null, rMin: Infinity, rMax: 0, host: null,
+    sweep: [], born: S.simSteps,
+  };
+  Composite.add(world, b);
+  Body.setVelocity(b, { x: o.vx || 0, y: o.vy || 0 });
+  bodies.push(b);
+  return b;
+}
+function nextIdOfKind(kind) { return bodies.filter(b => b.orb.kind === kind).length + 1; }
+
+function removeBody(b) {
+  Composite.remove(world, b);
+  bodies = bodies.filter(x => x !== b);
+  if (S.selected === b) { S.selected = null; S.follow = false; }
+}
+
+function clearAll(keepStars) {
+  for (const b of bodies.slice()) if (!keepStars || b.orb.kind !== 'star') removeBody(b);
+  particles = []; flashes = []; mergeQueue = [];
+  S.selected = null; S.follow = false;
+}
+
+// ---------- gravity ----------
+function attractors() { return bodies.filter(b => b.orb.kind !== 'asteroid' && b.orb.m > 0); }
+
+function accelAt(x, y, src, skip) {
+  let ax = 0, ay = 0;
+  const g = G();
+  for (const s of src) {
+    if (s === skip) continue;
+    const dx = s.position.x - x, dy = s.position.y - y;
+    const d2 = dx * dx + dy * dy + EPS2;
+    const f = g * s.orb.m / (d2 * Math.sqrt(d2));
+    ax += f * dx; ay += f * dy;
+  }
+  return [ax, ay];
+}
+
+Events.on(engine, 'beforeUpdate', () => {
+  const src = attractors();
+  const k = 1 / (STEP * STEP);
+  for (const b of bodies) {
+    const [ax, ay] = accelAt(b.position.x, b.position.y, src, b);
+    b.orb.ax = ax; b.orb.ay = ay;
+    // Matter: velocity += (force / mass) * dt^2, so force = mass * a / dt^2
+    Body.applyForce(b, b.position, { x: b.mass * ax * k, y: b.mass * ay * k });
+  }
+});
+
+Events.on(engine, 'collisionStart', ev => {
+  for (const p of ev.pairs) {
+    const a = p.bodyA.parent, b = p.bodyB.parent;
+    if (a.orb && b.orb) mergeQueue.push([a, b]);
+  }
+});
+
+// Leapfrog start: Matter kicks velocity before drifting, so back the initial
+// velocity off by half a step of acceleration. This keeps orbits from drifting.
+function halfKick(list) {
+  const src = attractors();
+  for (const b of list) {
+    const [ax, ay] = accelAt(b.position.x, b.position.y, src, b);
+    Body.setVelocity(b, { x: b.velocity.x - ax / 2, y: b.velocity.y - ay / 2 });
+  }
+}
+
+function zeroMomentum() {
+  let px = 0, py = 0, m = 0;
+  for (const b of attractors()) { px += b.orb.m * b.velocity.x; py += b.orb.m * b.velocity.y; m += b.orb.m; }
+  if (!m) return;
+  const vx = px / m, vy = py / m;
+  for (const b of bodies) Body.setVelocity(b, { x: b.velocity.x - vx, y: b.velocity.y - vy });
+}
+
+function processMerges() {
+  if (!mergeQueue.length) return;
+  const q = mergeQueue; mergeQueue = [];
+  for (let [a, b] of q) {
+    if (!bodies.includes(a) || !bodies.includes(b)) continue;
+    if (a.orb.kind === 'asteroid' && b.orb.kind === 'asteroid') continue;
+    // the heavier (or the star) survives and swallows the other
+    const rank = x => (x.orb.kind === 'star' ? 1e9 : 0) + x.orb.m + (x.orb.kind === 'asteroid' ? -1 : 0);
+    if (rank(b) > rank(a)) [a, b] = [b, a];
+    const m1 = a.orb.m, m2 = b.orb.m, m = m1 + m2;
+    const w1 = m > 0 ? m1 / m : 0.5, w2 = 1 - w1;
+    const pos = { x: a.position.x * w1 + b.position.x * w2, y: a.position.y * w1 + b.position.y * w2 };
+    const vel = { x: a.velocity.x * w1 + b.velocity.x * w2, y: a.velocity.y * w1 + b.velocity.y * w2 };
+    const at = { x: b.position.x, y: b.position.y };
+    if (a.orb.kind === 'star') {
+      // star absorbs it: keep the star body, grow its mass and pulse
+      a.orb.m = m;
+      if (S.starBody === a) S.starMass = m;
+      Body.setPosition(a, pos); Body.setVelocity(a, vel);
+      a.orb.pulse = 1;
+      burst(at.x, at.y, b.orb.color, b.orb.kind === 'asteroid' ? 8 : 40);
+      flashes.push({ x: at.x, y: at.y, r: a.orb.r * 2.5, t: 0, color: '#FDE68A' });
+      if (S.selected === b) S.selected = null;
+      removeBody(b);
+      syncStarSlider();
+      if (b.orb.kind !== 'asteroid') toast(b.orb.name + ' fell into the star');
+    } else {
+      const r = Math.hypot(a.orb.r, b.orb.r);  // combined area
+      const keepSel = S.selected === a || S.selected === b;
+      const nb = addBodyAfterRemove([a, b], {
+        kind: 'planet', m, x: pos.x, y: pos.y, vx: vel.x, vy: vel.y, r: Math.min(r, 24),
+        color: a.orb.color, name: a.orb.name,
+      });
+      if (nb) {
+        nb.orb.trail = a.orb.trail.slice();
+        nb.orb.pulse = 1;
+        if (keepSel) S.selected = nb;
+      }
+      burst(at.x, at.y, b.orb.color, b.orb.kind === 'asteroid' ? 8 : 34);
+      flashes.push({ x: pos.x, y: pos.y, r: r * 4, t: 0, color: '#fff' });
+    }
+  }
+}
+function addBodyAfterRemove(gone, o) {
+  for (const g of gone) removeBody(g);
+  return addBody(o);
+}
+
+// ---------- particles ----------
+function burst(x, y, color, n) {
+  if (reduceMotion) n = Math.ceil(n / 4);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, s = 0.5 + Math.random() * 3.5;
+    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, decay: 0.012 + Math.random() * 0.025, color, size: 1 + Math.random() * 2.2 });
+  }
+  if (particles.length > 900) particles.splice(0, particles.length - 900);
+}
+
+// ---------- canvas / camera ----------
+const stage = document.getElementById('stage');
+const art = document.getElementById('art');
+const ctx = art.getContext('2d');
+let W = 0, H = 0, DPR = 1, fitScale = 1;
+const cam = { x: CONFIG.WORLD_W / 2, y: CONFIG.WORLD_H / 2, zoom: 1 };
+const scale = () => fitScale * cam.zoom;
+
+function screenToWorld(sx, sy) {
+  const s = scale();
+  return { x: cam.x + (sx - W / 2) / s, y: cam.y + (sy - H / 2) / s };
+}
+function worldToScreen(x, y) {
+  const s = scale();
+  return { x: (x - cam.x) * s + W / 2, y: (y - cam.y) * s + H / 2 };
+}
+function visibleBounds() {
+  const a = screenToWorld(0, 0), b = screenToWorld(W, H);
+  return { min: { x: a.x, y: a.y }, max: { x: b.x, y: b.y } };
+}
+
+let nebula = null;
+function resize() {
+  const r = stage.getBoundingClientRect();
+  W = Math.max(1, r.width); H = Math.max(1, r.height);
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  art.width = Math.round(W * DPR); art.height = Math.round(H * DPR);
+  art.style.width = W + 'px'; art.style.height = H + 'px';
+  fitScale = Math.min(W / CONFIG.WORLD_W, H / CONFIG.WORLD_H);
+  buildNebula();
+  if (xrayRender) { Render.setSize(xrayRender, W, H); }
+}
+
+function buildNebula() {
+  nebula = document.createElement('canvas');
+  nebula.width = Math.ceil(W * 1.3); nebula.height = Math.ceil(H * 1.3);
+  const n = nebula.getContext('2d');
+  const blobs = [
+    [0.22, 0.30, 0.55, 'rgba(139,92,246,0.10)'],
+    [0.80, 0.72, 0.50, 'rgba(34,211,238,0.06)'],
+    [0.62, 0.18, 0.35, 'rgba(236,72,153,0.05)'],
+    [0.40, 0.85, 0.40, 'rgba(99,102,241,0.07)'],
+  ];
+  for (const [x, y, rr, c] of blobs) {
+    const R = rr * Math.max(nebula.width, nebula.height);
+    const g = n.createRadialGradient(x * nebula.width, y * nebula.height, 0, x * nebula.width, y * nebula.height, R);
+    g.addColorStop(0, c); g.addColorStop(1, 'rgba(0,0,0,0)');
+    n.fillStyle = g; n.fillRect(0, 0, nebula.width, nebula.height);
+  }
+}
+
+// background starfield: three layers, positions in [0,1)
+const starLayers = CONFIG.BACKGROUND_STARS.map((count, li) => Array.from({ length: count }, () => ({
+  x: Math.random(), y: Math.random(),
+  s: (0.5 + Math.random() * 0.9) * (0.7 + li * 0.45),
+  a: 0.25 + Math.random() * 0.6,
+  ph: Math.random() * Math.PI * 2, sp: 0.5 + Math.random() * 1.8,
+  tint: Math.random() < 0.15 ? '#C4B5FD' : Math.random() < 0.15 ? '#A5F3FC' : '#FFFFFF',
+})));
+
+// ---------- drawing ----------
+let tNow = 0;
+function drawBackground() {
+  ctx.fillStyle = '#070A12';
+  ctx.fillRect(0, 0, W, H);
+  const s = scale();
+  if (nebula) {
+    const ox = -((cam.x - CONFIG.WORLD_W / 2) * s * 0.02) - W * 0.15;
+    const oy = -((cam.y - CONFIG.WORLD_H / 2) * s * 0.02) - H * 0.15;
+    ctx.drawImage(nebula, ox, oy);
+  }
+  for (let li = 0; li < starLayers.length; li++) {
+    const p = CONFIG.PARALLAX[li];
+    const ox = -cam.x * s * p, oy = -cam.y * s * p;
+    for (const st of starLayers[li]) {
+      let x = (st.x * W + ox) % W; if (x < 0) x += W;
+      let y = (st.y * H + oy) % H; if (y < 0) y += H;
+      const tw = reduceMotion ? 1 : 0.65 + 0.35 * Math.sin(tNow * 0.001 * st.sp + st.ph);
+      ctx.globalAlpha = st.a * tw;
+      ctx.fillStyle = st.tint;
+      ctx.fillRect(x, y, st.s, st.s);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+}
+
+function drawTrails() {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const s = scale();
+  for (const b of bodies) {
+    const tr = b.orb.trail;
+    if (tr.length < 2) continue;
+    const isA = b.orb.kind === 'asteroid';
+    const chunks = isA ? 3 : 8;
+    const per = Math.ceil(tr.length / chunks);
+    ctx.lineWidth = isA ? 1 : Math.max(1.2, Math.min(3, b.orb.r * s * 0.35));
+    for (let c = 0; c < chunks; c++) {
+      const i0 = c * per, i1 = Math.min(tr.length - 1, (c + 1) * per);
+      if (i1 <= i0) continue;
+      const alpha = ((c + 1) / chunks) * (isA ? 0.18 : 0.55);
+      ctx.strokeStyle = hexA(b.orb.color, alpha);
+      ctx.beginPath();
+      let p = worldToScreen(tr[i0][0], tr[i0][1]);
+      ctx.moveTo(p.x, p.y);
+      for (let i = i0 + 1; i <= i1; i++) { p = worldToScreen(tr[i][0], tr[i][1]); ctx.lineTo(p.x, p.y); }
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function nearestStar(b) {
+  let best = null, bd = Infinity;
+  for (const s of bodies) {
+    if (s.orb.kind !== 'star' || s === b) continue;
+    const d = Vector.magnitudeSquared(Vector.sub(s.position, b.position));
+    if (d < bd) { bd = d; best = s; }
+  }
+  return best;
+}
+
+function drawStar(b) {
+  const p = worldToScreen(b.position.x, b.position.y);
+  const s = scale();
+  const r = b.orb.r * s;
+  const pulse = reduceMotion ? 0 : Math.sin(tNow * 0.002 + b.orb.id) * 0.06;
+  const kick = b.orb.pulse;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  // outer bloom
+  const R = r * (7 + kick * 4) * (1 + pulse);
+  let g = ctx.createRadialGradient(p.x, p.y, r * 0.5, p.x, p.y, R);
+  g.addColorStop(0, hexA(b.orb.color, 0.35 + kick * 0.3));
+  g.addColorStop(0.25, hexA(b.orb.color, 0.12));
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2); ctx.fill();
+  // corona
+  const R2 = r * (2.1 + pulse * 3 + kick);
+  g = ctx.createRadialGradient(p.x, p.y, r * 0.8, p.x, p.y, R2);
+  g.addColorStop(0, 'rgba(255,240,200,0.55)');
+  g.addColorStop(1, 'rgba(255,180,80,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, R2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  // core
+  g = ctx.createRadialGradient(p.x - r * 0.25, p.y - r * 0.25, 0, p.x, p.y, r);
+  g.addColorStop(0, '#FFFFFF');
+  g.addColorStop(0.45, '#FFF3C4');
+  g.addColorStop(1, b.orb.color);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawPlanet(b) {
+  const p = worldToScreen(b.position.x, b.position.y);
+  const s = scale();
+  const r = Math.max(1.5, b.orb.r * s);
+  if (p.x < -50 || p.y < -50 || p.x > W + 50 || p.y > H + 50) return;
+  if (b.orb.kind === 'asteroid') {
+    ctx.fillStyle = '#A8B0BD';
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
+  const st = nearestStar(b);
+  let lx = -0.4, ly = -0.4;
+  if (st) {
+    const d = Vector.normalise(Vector.sub(st.position, b.position));
+    lx = d.x * 0.45; ly = d.y * 0.45;
+  }
+  // soft glow
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const gr = ctx.createRadialGradient(p.x, p.y, r * 0.6, p.x, p.y, r * (2.6 + b.orb.pulse * 3));
+  gr.addColorStop(0, hexA(b.orb.color, 0.28 + b.orb.pulse * 0.4));
+  gr.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, r * (2.6 + b.orb.pulse * 3), 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  // lit body
+  const g = ctx.createRadialGradient(p.x + lx * r, p.y + ly * r, r * 0.05, p.x, p.y, r * 1.15);
+  g.addColorStop(0, '#FFFFFF');
+  g.addColorStop(0.25, b.orb.color);
+  g.addColorStop(1, '#05070D');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawParticles() {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const s = scale();
+  for (const p of particles) {
+    const q = worldToScreen(p.x, p.y);
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(q.x, q.y, p.size * Math.max(0.6, s) * (0.5 + p.life * 0.5), 0, Math.PI * 2); ctx.fill();
+  }
+  for (const f of flashes) {
+    const q = worldToScreen(f.x, f.y);
+    const e = 1 - Math.pow(1 - f.t, 3);
+    const R = f.r * s * (0.4 + e);
+    const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, R);
+    g.addColorStop(0, hexA(f.color.length === 4 ? '#FFFFFF' : f.color, 0.8 * (1 - f.t)));
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, R, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function stepEffects(dtFrames) {
+  for (const p of particles) { p.x += p.vx * dtFrames; p.y += p.vy * dtFrames; p.vx *= 0.97; p.vy *= 0.97; p.life -= p.decay * dtFrames; }
+  particles = particles.filter(p => p.life > 0);
+  for (const f of flashes) f.t += 0.035 * dtFrames;
+  flashes = flashes.filter(f => f.t < 1);
+  for (const b of bodies) if (b.orb.pulse > 0) b.orb.pulse = Math.max(0, b.orb.pulse - 0.02 * dtFrames);
+}
+
+function drawSelection() {
+  const b = S.selected;
+  if (!b) return;
+  const p = worldToScreen(b.position.x, b.position.y);
+  const r = Math.max(8, b.orb.r * scale()) + 7;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(34,211,238,0.9)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.lineDashOffset = -tNow * 0.02;
+  ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#E8EDF6';
+  ctx.font = '500 12px Inter, sans-serif';
+  ctx.fillText(b.orb.name, p.x + r + 6, p.y - r * 0.4);
+  ctx.restore();
+}
+
+// slingshot drag visual
+function drawSlingshot() {
+  if (!drag || drag.mode !== 'launch') return;
+  const a = worldToScreen(drag.start.x, drag.start.y), c = worldToScreen(drag.cur.x, drag.cur.y);
+  ctx.save();
+  // rubber band
+  ctx.strokeStyle = 'rgba(232,237,246,0.5)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 4]);
+  ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(c.x, c.y); ctx.stroke(); ctx.setLineDash([]);
+  // launch arrow (opposite the pull)
+  const v = launchVelocity();
+  const len = Math.hypot(v.x, v.y);
+  if (len > 0.01) {
+    const ex = a.x + (a.x - c.x), ey = a.y + (a.y - c.y);
+    ctx.strokeStyle = '#22D3EE'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(ex, ey); ctx.stroke();
+    const ang = Math.atan2(ey - a.y, ex - a.x);
+    ctx.fillStyle = '#22D3EE';
+    ctx.beginPath(); ctx.moveTo(ex, ey);
+    ctx.lineTo(ex - 10 * Math.cos(ang - 0.4), ey - 10 * Math.sin(ang - 0.4));
+    ctx.lineTo(ex - 10 * Math.cos(ang + 0.4), ey - 10 * Math.sin(ang + 0.4)); ctx.fill();
+  }
+  // ghost planet
+  const r = planetRadius(S.nextMassMJ * CONFIG.JUPITER) * scale();
+  ctx.fillStyle = hexA(PALETTE[paletteIdx % PALETTE.length], 0.9);
+  ctx.beginPath(); ctx.arc(a.x, a.y, Math.max(3, r), 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function render() {
+  drawBackground();
+  if (S.layers.trails) drawTrails();
+  for (const b of bodies) if (b.orb.kind !== 'star') drawPlanet(b);
+  for (const b of bodies) if (b.orb.kind === 'star') drawStar(b);
+  drawParticles();
+  drawSelection();
+  drawSlingshot();
+}
+
+// ---------- simulation loop ----------
+function recordOrbit(b) {
+  const o = b.orb;
+  if (S.simSteps % CONFIG.TRAIL_EVERY === 0) {
+    o.trail.push([b.position.x, b.position.y]);
+    const max = o.kind === 'asteroid' ? 40 : CONFIG.TRAIL_LENGTH;
+    if (o.trail.length > max) o.trail.splice(0, o.trail.length - max);
+  }
+}
+
+function physicsStep() {
+  Engine.update(engine, STEP);
+  S.simSteps++;
+  processMerges();
+  for (const b of bodies) recordOrbit(b);
+  // drop bodies that wander far away
+  for (const b of bodies.slice()) {
+    if (b.orb.kind === 'star') continue;
+    if (Math.abs(b.position.x - CONFIG.WORLD_W / 2) > 20000 || Math.abs(b.position.y - CONFIG.WORLD_H / 2) > 20000) removeBody(b);
+  }
+}
+
+let acc = 0, lastT = performance.now();
+function frame(t) {
+  const dt = Math.min(100, t - lastT); lastT = t; tNow = t;
+  acc += dt * S.warp;
+  let n = 0;
+  while (acc >= STEP && n < CONFIG.MAX_STEPS_PER_FRAME) { physicsStep(); acc -= STEP; n++; }
+  if (n >= CONFIG.MAX_STEPS_PER_FRAME) acc = 0;
+  stepEffects(dt / STEP);
+  if (S.follow && S.selected) { cam.x += (S.selected.position.x - cam.x) * 0.15; cam.y += (S.selected.position.y - cam.y) * 0.15; }
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  render();
+  if (xrayRender && S.layers.xray) Render.lookAt(xrayRender, visibleBounds());
+  updateHUD();
+  requestAnimationFrame(frame);
+}
+
+// ---------- pointer input ----------
+let drag = null;
+let spaceDown = false;
+
+function launchVelocity() {
+  return { x: (drag.start.x - drag.cur.x) * CONFIG.LAUNCH_PER_PX, y: (drag.start.y - drag.cur.y) * CONFIG.LAUNCH_PER_PX };
+}
+
+function pickBody(w) {
+  const hit = Query.point(bodies, w).filter(b => b.orb.kind !== 'asteroid');
+  if (hit.length) return hit[hit.length - 1];
+  // generous pick radius for tiny bodies
+  const tol = 10 / scale();
+  let best = null, bd = Infinity;
+  for (const b of bodies) {
+    const d = Vector.magnitude(Vector.sub(b.position, w)) - b.orb.r;
+    if (d < tol && d < bd) { bd = d; best = b; }
+  }
+  return best;
+}
+
+function localXY(e) {
+  const r = art.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+art.addEventListener('contextmenu', e => e.preventDefault());
+art.addEventListener('pointerdown', e => {
+  art.setPointerCapture(e.pointerId);
+  const sp = localXY(e), w = screenToWorld(sp.x, sp.y);
+  if (e.button === 2 || e.button === 1 || spaceDown) {
+    drag = { mode: 'pan', sx: sp.x, sy: sp.y, cx: cam.x, cy: cam.y };
+    S.follow = false;
+    return;
+  }
+  if (e.button !== 0) return;
+  const hit = pickBody(w);
+  if (hit) {
+    S.selected = hit;
+    drag = { mode: 'body', body: hit, start: w, moved: false, constraint: null, sx: sp.x, sy: sp.y };
+    return;
+  }
+  drag = { mode: 'launch', start: w, cur: w, sx: sp.x, sy: sp.y };
+});
+art.addEventListener('pointermove', e => {
+  const sp = localXY(e), w = screenToWorld(sp.x, sp.y);
+  S.pointer = w;
+  if (!drag) return;
+  if (drag.mode === 'pan') {
+    const s = scale();
+    cam.x = drag.cx - (sp.x - drag.sx) / s;
+    cam.y = drag.cy - (sp.y - drag.sy) / s;
+  } else if (drag.mode === 'launch') {
+    drag.cur = w;
+  } else if (drag.mode === 'body') {
+    if (!drag.moved && Math.hypot(sp.x - drag.sx, sp.y - drag.sy) > 5) {
+      drag.moved = true;
+      // grab the body with a spring from the pointer
+      drag.constraint = Constraint.create({ pointA: { x: w.x, y: w.y }, bodyB: drag.body, pointB: { x: 0, y: 0 }, stiffness: 0.08, damping: 0.2, length: 0, label: 'pointer grab' });
+      Composite.add(world, drag.constraint);
+    }
+    if (drag.constraint) { drag.constraint.pointA.x = w.x; drag.constraint.pointA.y = w.y; }
+  }
+});
+function endDrag(e) {
+  if (!drag) return;
+  if (drag.mode === 'launch') {
+    const sp = localXY(e);
+    const pullScreen = Math.hypot(sp.x - drag.sx, sp.y - drag.sy);
+    if (pullScreen < 5) { S.selected = null; S.follow = false; }
+    else launch();
+  } else if (drag.mode === 'body' && drag.constraint) {
+    Composite.remove(world, drag.constraint);
+  }
+  drag = null;
+}
+art.addEventListener('pointerup', endDrag);
+art.addEventListener('pointercancel', endDrag);
+
+function launch() {
+  const v = launchVelocity();
+  const b = addBody({ kind: 'planet', m: S.nextMassMJ * CONFIG.JUPITER, x: drag.start.x, y: drag.start.y, vx: v.x, vy: v.y });
+  if (!b) return;
+  zeroMomentum();
+  S.selected = b;
+  burst(b.position.x, b.position.y, b.orb.color, 10);
+}
+
+art.addEventListener('wheel', e => {
+  e.preventDefault();
+  const sp = localXY(e);
+  const before = screenToWorld(sp.x, sp.y);
+  cam.zoom = Math.max(0.2, Math.min(8, cam.zoom * Math.exp(-e.deltaY * 0.0015)));
+  const after = screenToWorld(sp.x, sp.y);
+  cam.x += before.x - after.x; cam.y += before.y - after.y;
+}, { passive: false });
+
+// ---------- scenarios ----------
+function makeStar(m, x, y, opts = {}) {
+  const b = addBody(Object.assign({ kind: 'star', m, x, y, name: 'Star' }, opts));
+  return b;
+}
+function circularSpeed(M, r) {
+  // exact for the softened force used in the engine
+  const a = G() * M * r / Math.pow(r * r + EPS2, 1.5);
+  return Math.sqrt(a * r);
+}
+function orbiter(star, rAU, opts = {}) {
+  const r = rAU * CONFIG.AU;
+  const ang = opts.angle || 0;
+  const v = circularSpeed(star.orb.m, r) * (opts.speed || 1);
+  const x = star.position.x + Math.cos(ang) * r, y = star.position.y + Math.sin(ang) * r;
+  const dir = opts.retro ? -1 : 1; // counter-clockwise on screen (y points down)
+  return addBody(Object.assign({
+    kind: 'planet', m: opts.m === undefined ? 3e-6 : opts.m, x, y,
+    vx: star.velocity.x + Math.sin(ang) * v * dir,
+    vy: star.velocity.y - Math.cos(ang) * v * dir,
+  }, opts.body || {}));
+}
+
+const C = { x: CONFIG.WORLD_W / 2, y: CONFIG.WORLD_H / 2 };
+const SCENARIOS = [
+  {
+    key: '1', name: 'Circular orbit',
+    caption: 'Circular orbit', sub: 'One Earth-mass planet at 1 AU. Gravity supplies exactly the centripetal force, so the radius never changes. One lap = 1 year = 8 s.',
+    load() {
+      const st = makeStar(S.starMass, C.x, C.y); S.starBody = st;
+      const p = orbiter(st, 1, { body: { name: 'Earth', color: '#60A5FA' } });
+      S.selected = p;
+    },
+  },
+];
+
+function loadScenario(i) {
+  const sc = SCENARIOS[i];
+  if (!sc) return;
+  clearAll(false);
+  S.scenario = i; S.simSteps = 0; acc = 0;
+  paletteIdx = 0; nextId = 1;
+  S.starMass = 1; syncStarSlider();
+  sc.load();
+  halfKick(bodies);
+  S.caption = sc.caption; S.captionSub = sc.sub;
+  updateCaption();
+  renderScenarioList();
+}
+
+// ---------- asteroid belt ----------
+function addBelt() {
+  const st = S.starBody && bodies.includes(S.starBody) ? S.starBody : nearestStar({ position: C });
+  if (!st) { toast('Add a star first (load a scenario)'); return; }
+  const room = CONFIG.MAX_BODIES - bodies.length;
+  const n = Math.min(CONFIG.BELT_COUNT, room);
+  if (n <= 0) { toast('Body cap reached (' + CONFIG.MAX_BODIES + ')'); return; }
+  const added = [];
+  for (let i = 0; i < n; i++) {
+    const rAU = CONFIG.BELT_INNER_AU + Math.random() * (CONFIG.BELT_OUTER_AU - CONFIG.BELT_INNER_AU);
+    const a = orbiter(st, rAU, { angle: Math.random() * Math.PI * 2, speed: 0.98 + Math.random() * 0.04, m: 0, body: { kind: 'asteroid', name: 'Asteroid' } });
+    if (a) added.push(a);
+  }
+  halfKick(added);
+  toast(`Added ${added.length} asteroids (test particles: they feel gravity but exert none)`);
+}
+
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function updateCaption() {
+  $('caption').innerHTML = `${S.caption}<small>${S.captionSub}</small>`;
+}
+
+function renderScenarioList() {
+  $('scenList').innerHTML = SCENARIOS.map((s, i) =>
+    `<button class="${i === S.scenario ? 'on' : ''}" data-i="${i}" aria-label="Load scenario ${s.name}"><span class="k">${s.key}</span><span class="t">${s.name}</span></button>`).join('');
+}
+$('scenList').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (b) loadScenario(+b.dataset.i);
+});
+
+function setWarp(w) {
+  S.warp = w; if (w > 0) S.lastWarp = w;
+  $('warpV').textContent = w === 0 ? 'paused' : w + '×';
+  for (const b of $('warpSeg').children) b.classList.toggle('on', +b.dataset.w === w);
+}
+$('warpSeg').innerHTML = CONFIG.WARPS.map(w => `<button data-w="${w}" aria-label="${w === 0 ? 'Pause' : 'Time warp ' + w + 'x'}">${w === 0 ? '❚❚' : w + '×'}</button>`).join('');
+$('warpSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setWarp(+b.dataset.w); });
+
+function paintRange(el) {
+  const p = (el.value - el.min) / (el.max - el.min) * 100;
+  el.style.setProperty('--p', p + '%');
+}
+function massFromSlider(v) {
+  const t = v / 100;
+  return CONFIG.PLANET_MASS_MIN_MJ * Math.pow(CONFIG.PLANET_MASS_MAX_MJ / CONFIG.PLANET_MASS_MIN_MJ, t);
+}
+function syncStarSlider() {
+  $('mS').value = Math.max(0.5, Math.min(5, S.starMass));
+  $('mV').textContent = S.starMass.toFixed(2) + ' M☉';
+  paintRange($('mS'));
+}
+$('gS').addEventListener('input', e => { S.gMult = +e.target.value; $('gV').textContent = S.gMult.toFixed(2) + '×'; paintRange(e.target); });
+$('mS').addEventListener('input', e => {
+  S.starMass = +e.target.value;
+  if (S.starBody && bodies.includes(S.starBody)) {
+    S.starBody.orb.m = S.starMass;
+    const r = starRadius(S.starMass);
+    Body.scale(S.starBody, r / S.starBody.orb.r, r / S.starBody.orb.r);
+    S.starBody.orb.r = r;
+  }
+  $('mV').textContent = S.starMass.toFixed(2) + ' M☉'; paintRange(e.target);
+});
+$('pS').addEventListener('input', e => {
+  S.nextMassMJ = massFromSlider(+e.target.value);
+  $('pV').textContent = (S.nextMassMJ < 1 ? S.nextMassMJ.toFixed(2) : S.nextMassMJ.toFixed(1)) + ' M♃';
+  paintRange(e.target);
+});
+for (const id of ['gS', 'mS', 'pS']) { $(id).dispatchEvent(new Event('input')); }
+$('btnClear').addEventListener('click', () => { clearAll(true); toast('Cleared. The star stays.'); });
+$('btnBelt').addEventListener('click', addBelt);
+
+// collapsible sections
+for (const sec of document.querySelectorAll('.sec')) {
+  sec.querySelector('.sec-h').addEventListener('click', () => sec.classList.toggle('closed'));
+}
+
+// layers
+const LAYERS = [
+  { id: 'space', key: '', name: 'Space', desc: 'Starfield, nebula, star glow (always on)', fixed: true },
+  { id: 'trails', key: 'T', name: 'Trails', desc: 'Fading glowing paths' },
+];
+function renderLayers() {
+  const html = LAYERS.map(l => {
+    const on = l.fixed ? true : S.layers[l.id];
+    return `<button class="tog" role="switch" aria-checked="${on}" ${l.fixed ? 'aria-disabled="true"' : ''} data-l="${l.id}" aria-label="Toggle ${l.name} layer">
+      <span class="sw"></span><span class="lbl">${l.name}<small>${l.desc}</small></span>${l.key ? `<kbd>${l.key}</kbd>` : ''}</button>`;
+  }).join('');
+  $('layerList').innerHTML = html;
+  $('layersPop').innerHTML = html;
+}
+function toggleLayer(id) {
+  if (!(id in S.layers)) return;
+  S.layers[id] = !S.layers[id];
+  renderLayers();
+}
+for (const el of [$('layerList'), $('layersPop')]) el.addEventListener('click', e => { const b = e.target.closest('.tog'); if (b) toggleLayer(b.dataset.l); });
+$('btnLayers').addEventListener('click', e => { e.stopPropagation(); $('layersPop').classList.toggle('show'); $('btnLayers').classList.toggle('on'); });
+document.addEventListener('click', e => { if (!e.target.closest('#layersPop') && !e.target.closest('#btnLayers')) { $('layersPop').classList.remove('show'); $('btnLayers').classList.remove('on'); } });
+
+// HUD
+function updateHUD() {
+  const yrs = S.simSteps / STEPS_PER_YEAR;
+  const planets = bodies.filter(b => b.orb.kind === 'planet').length;
+  const ast = bodies.filter(b => b.orb.kind === 'asteroid').length;
+  $('hudTR').innerHTML = `t = <b>${yrs.toFixed(2)}</b> yr<br>speed <b>${S.warp === 0 ? 'paused' : S.warp + '×'}</b><br>${planets} planets${ast ? ' · ' + ast + ' asteroids' : ''}`;
+  if (frame.n === undefined) frame.n = 0;
+  if ((frame.n++ % 6) === 0) updateLive();
+}
+
+function updateLive() {
+  const b = S.selected;
+  if (!b) { $('liveBox').innerHTML = '<div class="small muted">Click a planet to see its distance, speed and energy.</div>'; return; }
+  const st = nearestStar(b);
+  const r = st ? Vector.magnitude(Vector.sub(b.position, st.position)) : 0;
+  const v = Math.hypot(b.velocity.x, b.velocity.y);
+  $('liveBox').innerHTML = `<div class="kv">
+    <span>Body</span><span class="val" style="color:${b.orb.color}">${b.orb.name}</span>
+    <span>Distance</span><span class="val">${toAU(r).toFixed(3)} AU</span>
+    <span>Speed</span><span class="val">${toAUyr(v).toFixed(2)} AU/yr</span>
+  </div>`;
+}
+
+// keyboard
+const KEYS = [
+  ['Drag', 'Slingshot launch from empty space'], ['Click', 'Select a body'], ['Drag body', 'Grab and move a body'],
+  ['Scroll', 'Zoom around the cursor'], ['Right-drag', 'Pan (or hold Space and drag)'],
+  ['Space', 'Pause / resume'], ['1', 'Load scenario'], ['T', 'Trails layer'], ['P', 'Present mode'], ['?', 'This help'], ['Esc', 'Close overlays'],
+];
+$('keyList').innerHTML = KEYS.map(([k, d]) => `<kbd>${k}</kbd><span>${d}</span>`).join('');
+function showHelp(v) { $('help').classList.toggle('show', v); }
+$('btnHelp').addEventListener('click', () => showHelp(!$('help').classList.contains('show')));
+$('btnHelpClose').addEventListener('click', () => showHelp(false));
+function togglePresent() { document.body.classList.toggle('present'); $('btnPresent').classList.toggle('on'); setTimeout(resize, 260); }
+$('btnPresent').addEventListener('click', togglePresent);
+function closeIntro() { $('intro').classList.remove('show'); }
+$('btnStart').addEventListener('click', closeIntro);
+
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' && e.key !== ' ') return;
+  const k = e.key;
+  if (k === 'Escape') { showHelp(false); closeIntro(); $('layersPop').classList.remove('show'); return; }
+  if (k === ' ') {
+    e.preventDefault();
+    if (!spaceDown) { spaceDown = true; spaceDown.t = performance.now(); spaceTap = performance.now(); }
+    return;
+  }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (k === '?' || k === '/') { showHelp(!$('help').classList.contains('show')); return; }
+  if ($('intro').classList.contains('show')) closeIntro();
+  const lower = k.toLowerCase();
+  if (lower === 'p') togglePresent();
+  else if (lower === 't') toggleLayer('trails');
+  else if (k >= '1' && k <= '9') loadScenario(+k - 1);
+});
+let spaceTap = 0, panned = false;
+window.addEventListener('keyup', e => {
+  if (e.key === ' ') {
+    spaceDown = false;
+    // a quick tap toggles pause; holding is for panning
+    if (performance.now() - spaceTap < 300 && !(drag && drag.mode === 'pan')) setWarp(S.warp === 0 ? S.lastWarp : 0);
+  }
+});
+
+// Under the hood
+const MODULES = [
+  ['Engine', 'Steps the world at a fixed 1/60 s. Built-in gravity is off (scale 0); we add Newton\'s law ourselves.'],
+  ['Events', '"beforeUpdate" applies gravity between every pair; "collisionStart" queues merges.'],
+  ['Body', 'applyForce adds the gravity force each step; setVelocity launches planets.'],
+  ['Bodies', 'Creates every star, planet and asteroid as a circle sensor.'],
+  ['Composite', 'Holds the world and adds/removes bodies on launch, merge and clear.'],
+  ['Query', 'Query.point finds which body you clicked.'],
+  ['Constraint', 'A spring from the pointer when you drag a body.'],
+  ['Vector', 'Distances, directions and speeds.'],
+];
+$('modList').innerHTML = MODULES.map(([m, d]) => `<li><code>Matter.${m}</code> · ${d}</li>`).join('');
+$('lessonBox').innerHTML = '<div class="small muted">Lesson activities coming in the next build.</div>';
+
+// ---------- X-ray (Matter.Render debug overlay) ----------
+let xrayRender = null;
+
+// ---------- boot ----------
+window.addEventListener('resize', resize);
+resize();
+renderLayers();
+setWarp(1);
+loadScenario(0);
+
+// self test: ?selftest runs the circular orbit for 5 years and reports the radius drift
+if (location.search.includes('selftest')) {
+  loadScenario(0);
+  const st = S.starBody, p = bodies.find(b => b.orb.kind === 'planet');
+  let rmin = Infinity, rmax = 0;
+  const steps = 5 * STEPS_PER_YEAR;
+  for (let i = 0; i < steps; i++) {
+    physicsStep();
+    const r = Vector.magnitude(Vector.sub(p.position, st.position));
+    rmin = Math.min(rmin, r); rmax = Math.max(rmax, r);
+  }
+  const ang = Math.atan2(p.position.y - st.position.y, p.position.x - st.position.x);
+  const res = `SELFTEST rmin=${(rmin / CONFIG.AU).toFixed(5)} rmax=${(rmax / CONFIG.AU).toFixed(5)} drift=${((rmax - rmin) / CONFIG.AU * 100).toFixed(3)}% endAngle=${ang.toFixed(4)}`;
+  console.log(res);
+  document.title = res;
+  loadScenario(0);
+} else {
+  $('intro').classList.add('show');
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
