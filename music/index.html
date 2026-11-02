@@ -195,14 +195,14 @@ kbd {
 .btn.ghost { background: transparent; }
 .btn.danger:hover { border-color: rgba(248,113,113,0.5); color: #FCA5A5; }
 .btn svg { width: 13px; height: 13px; }
-.song-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.song-list { display: grid; grid-template-columns: 1fr; gap: 6px; }
 .song {
-  text-align: left; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); cursor: pointer;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px; text-align: left; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); cursor: pointer;
   transition: background var(--t), border-color var(--t), box-shadow var(--t);
 }
 .song:hover { background: var(--glass-2); border-color: var(--line-2); }
-.song .t { font-size: 12.5px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.song .m { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.song .t { font-size: 12.5px; font-weight: 600; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song .m { flex: none; font-size: 11px; color: var(--muted); font-family: var(--mono); }
 .song.on { border-color: rgba(244,114,182,0.6); background: var(--pink-soft); box-shadow: 0 0 20px rgba(244,114,182,0.15); }
 .song.on .m { color: var(--pink); }
 .sub-panel { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
@@ -1620,8 +1620,9 @@ setInterval(() => {
     if (on) {
       if (!render && canvasEl) {
         const r = canvasEl.getBoundingClientRect ? canvasEl.getBoundingClientRect() : { width: GP.W, height: GP.H };
+        // Pass no canvas: Matter 0.20 deep-copies options and would recurse into the DOM element.
         render = Render.create({
-          canvas: canvasEl, engine,
+          engine,
           options: {
             width: Math.max(1, Math.round(r.width || GP.W)), height: Math.max(1, Math.round(r.height || GP.H)),
             pixelRatio: (typeof window !== 'undefined' && window.devicePixelRatio) || 1,
@@ -1630,6 +1631,10 @@ setInterval(() => {
             hasBounds: true,
           },
         });
+        render.canvas = canvasEl;
+        render.context = canvasEl.getContext('2d');
+        render.options.pixelRatio = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+        Render.setSize(render, render.options.width, render.options.height);
         Render.lookAt(render, { min: { x: 0, y: 0 }, max: { x: GP.W, y: GP.H } });
       }
       render && Render.run(render);
@@ -1952,7 +1957,34 @@ setInterval(() => {
   }
 
   // ---------- layers ----------
+  // Static stage (gradients, cone, felt) is painted once into an offscreen canvas and reused.
+  let stageCache = null;
   function drawStage(now) {
+    if (!stageCache) {
+      stageCache = document.createElement('canvas');
+      stageCache.width = W; stageCache.height = H;
+      const real = ctx; ctx = stageCache.getContext('2d');
+      paintStage();
+      ctx = real;
+    }
+    ctx.drawImage(stageCache, 0, 0, W, H);
+    // dust motes
+    if (!GP.reducedMotion) {
+      const c = ctx;
+      c.save(); c.globalCompositeOperation = 'lighter';
+      c.fillStyle = 'rgba(255,236,210,0.35)';
+      for (let i = 0; i < motes.length; i++) {
+        const m = motes[i];
+        const y = (m.y + now * m.v) % 660;
+        const spread = 60 + y * 0.9;
+        const x = 800 + ((m.x - 800) / 300) * spread * 0.5 + Math.sin(now * 0.3 + m.p) * 14;
+        c.globalAlpha = 0.25 + 0.25 * Math.sin(now * 0.8 + m.p);
+        c.fillRect(x, y, m.s, m.s);
+      }
+      c.restore();
+    }
+  }
+  function paintStage() {
     const c = ctx;
     c.fillStyle = G.bg; c.fillRect(0, 0, W, H);
     c.fillStyle = G.warm; c.fillRect(0, 0, W, H);
@@ -1969,19 +2001,6 @@ setInterval(() => {
     c.beginPath(); c.moveTo(775, -10); c.lineTo(825, -10); c.lineTo(1150, KEY_BOTTOM); c.lineTo(450, KEY_BOTTOM); c.closePath();
     c.fillStyle = G.cone; c.globalAlpha = 0.6; c.fill(); c.globalAlpha = 1;
     c.fillStyle = G.lamp; c.fillRect(700, -80, 200, 160);
-    // dust motes
-    if (!GP.reducedMotion) {
-      c.fillStyle = 'rgba(255,236,210,0.35)';
-      for (let i = 0; i < motes.length; i++) {
-        const m = motes[i];
-        const y = (m.y + now * m.v) % 660;
-        const spread = 60 + y * 0.9;
-        const x = 800 + ((m.x - 800) / 300) * spread * 0.5 + Math.sin(now * 0.3 + m.p) * 14;
-        c.globalAlpha = 0.25 + 0.25 * Math.sin(now * 0.8 + m.p);
-        c.fillRect(x, y, m.s, m.s);
-      }
-      c.globalAlpha = 1;
-    }
     c.restore();
     // floor
     c.fillStyle = G.floor; c.fillRect(0, KEY_BOTTOM, W, H - KEY_BOTTOM);
@@ -2880,11 +2899,11 @@ setInterval(() => {
     Object.keys(songs).forEach(id => {
       const s = songs[id];
       const b = el('button', { type: 'button', class: 'song', 'aria-label': 'Play ' + s.title, onclick: () => (S.song === id ? stopSong() : playSong(id)) },
-        el('span', { class: 't', text: s.title }), el('span', { class: 'm', text: (s.bpm || '–') + ' BPM · ' + ((s.notes && s.notes.length) || 0) + ' notes' }));
+        el('span', { class: 't', text: s.title }), el('span', { class: 'm', text: (s.bpm || '–') + ' BPM' }));
       syncers.push(() => {
         const on = S.song === id;
         b.classList.toggle('on', on);
-        b.querySelector('.m').textContent = on ? '▶ playing · tap to stop' : (s.bpm || '–') + ' BPM · ' + ((s.notes && s.notes.length) || 0) + ' notes';
+        b.querySelector('.m').textContent = on ? 'Playing' : (s.bpm || '–') + ' BPM';
       });
       songBox.append(b);
     });
