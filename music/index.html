@@ -206,7 +206,7 @@ kbd {
 .song.on { border-color: rgba(244,114,182,0.6); background: var(--pink-soft); box-shadow: 0 0 20px rgba(244,114,182,0.15); }
 .song.on .m { color: var(--pink); }
 .sub-panel { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
-.sub-panel[hidden] { display: none; }
+.sub-panel[hidden], .field[hidden] { display: none; }
 .cap { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); font-weight: 600; margin-bottom: 8px; }
 
 /* slider */
@@ -766,7 +766,6 @@ setInterval(() => {
   }
 
   let events = [];       // [{midi, dropTime, landTime, dropped}]
-  let songEnd = 0;
   let songHeight = 0;
   let nextBeat = 0;      // next rain/machine beat time
   let lastMode = null;
@@ -782,24 +781,31 @@ setInterval(() => {
   }
   function stop() { clearSong(); }
 
+  // Songs run on a live beat clock, so the Tempo slider changes speed even mid-song.
+  let songBeat = 0, songLast = 0, songLen = 0;
+  function bpm() { return Math.max(20, GP.state.tempo || 100); }
+
   function playSong(id) {
     clearSong();
     const song = SONGS[id];
     if (!song) return;
-    const tempo = GP.state.tempo || song.bpm;
-    const spb = 60 / tempo;
     songHeight = GP.state.dropHeight;
     const ft = fallTime(songHeight);
-    const start = GP.now() + ft + SEQ.leadExtra;
-    events = song.notes.map(n => ({ midi: n.midi, landTime: start + n.beat * spb, dropTime: start + n.beat * spb - ft, dur: n.dur * spb, dropped: false }));
-    songEnd = start + song.notes.reduce((m, n) => Math.max(m, n.beat + n.dur), 0) * spb;
+    songBeat = -(ft + SEQ.leadExtra) * bpm() / 60;   // first note lands after fall time + lead
+    songLast = GP.now();
+    songLen = song.notes.reduce((m, n) => Math.max(m, n.beat + n.dur), 0);
+    events = song.notes.map(n => ({ midi: n.midi, beat: n.beat, dropped: false, landTime: 0, dropTime: 0 }));
     GP.state.song = id;
-    refreshUpcoming(GP.now());
+    refreshUpcoming(songLast);
   }
 
   function refreshUpcoming(now) {
     GP.upcoming.length = 0;
-    for (const ev of events) if (ev.landTime > now) GP.upcoming.push({ midi: ev.midi, dropTime: ev.dropTime, landTime: ev.landTime });
+    const spb = 60 / bpm(), ft = fallTime(songHeight);
+    for (const ev of events) {
+      if (!ev.dropped) { ev.landTime = now + (ev.beat - songBeat) * spb; ev.dropTime = ev.landTime - ft; }
+      if (ev.landTime > now) GP.upcoming.push({ midi: ev.midi, dropTime: ev.dropTime, landTime: ev.landTime });
+    }
   }
 
   function randomKey() { return LOW + Math.floor(Math.random() * (HIGH - LOW + 1)); }
@@ -810,14 +816,17 @@ setInterval(() => {
 
     // ----- songs -----
     if (GP.state.song && events.length) {
+      const dt = Math.min(0.1, Math.max(0, now - songLast)); songLast = now;
+      songBeat += dt * bpm() / 60;
+      const ftBeats = fallTime(songHeight) * bpm() / 60;  // fall time expressed in beats at the current tempo
       for (const ev of events) {
-        if (ev.dropped || ev.dropTime > now) continue;
+        if (ev.dropped || songBeat < ev.beat - ftBeats) continue;
         ev.dropped = true;
-        if (now - ev.dropTime > SEQ.lateSkip) continue; // too late to land in rhythm: skip
+        if (songBeat - (ev.beat - ftBeats) > SEQ.lateSkip * bpm() / 60) continue; // too late: skip
         if (P && P.dropBall && !tooMany()) P.dropBall(ev.midi, songHeight);
       }
       refreshUpcoming(now);
-      if (now > songEnd + 0.3) clearSong();
+      if (songBeat > songLen + 0.5) clearSong();
     } else if (GP.state.song && !events.length) {
       GP.state.song = null;
     }
@@ -1471,13 +1480,15 @@ setInterval(() => {
     // Cascade: balls start at 4 different points on the top ramp; each start gives a different launch speed
     // off the last ramp, so the stream lands on 4 different keys: a rolling arpeggio.
     waterfall() {
+      // The emitter walks across four steep chutes; each chute pours its ball onto a different key.
       return {
-        emitter: { x: 170, y: 90 },
-        path: [170, 330, 250, 410],
+        emitter: { x: 260, y: 90 },
+        path: [260, 640, 960, 1340, 640, 960],
         items: [
-          { type: 'ramp', x1: 120, y1: 160, x2: 520, y2: 290 },
-          { type: 'ramp', x1: 660, y1: 330, x2: 400, y2: 420 },
-          { type: 'ramp', x1: 300, y1: 460, x2: 600, y2: 560 },
+          { type: 'ramp', x1: 200, y1: 260, x2: 440, y2: 380 },
+          { type: 'ramp', x1: 580, y1: 300, x2: 800, y2: 410 },
+          { type: 'ramp', x1: 1020, y1: 260, x2: 800, y2: 370 },
+          { type: 'ramp', x1: 1400, y1: 300, x2: 1170, y2: 415 },
         ],
       };
     },
@@ -2042,6 +2053,7 @@ setInterval(() => {
   }
 
   function drawMachine(now) {
+    if (GP.state.mode !== 'machine') return;
     const c = ctx;
     const st = GP.state;
     const mach = GP.machine || [];
@@ -2796,6 +2808,8 @@ setInterval(() => {
     S.mode = m;
     GP.emit('mode', { mode: m });
     const art = $('art'); art && art.classList.toggle('machine', m === 'machine');
+    // Machine parts only exist physically in Machine mode, so they never deflect song or rain balls.
+    GP.machine.forEach(it => { if (it.body) it.body.collisionFilter.mask = m === 'machine' ? 0xFFFFFFFF : 0; });
     if (m === 'machine' && !GP.machine.length) safe('preset', () => GP.Physics && GP.Physics.loadPreset && GP.Physics.loadPreset('waterfall'));
     toast({ play: 'Play mode', songs: 'Songs', machine: 'Machine', rain: 'Rain at <span class="num">' + S.tempo + '</span> BPM' }[m]);
     syncAll();
@@ -2912,7 +2926,7 @@ setInterval(() => {
       el('div', { class: 'btn-row', style: 'margin-top:8px' },
         el('button', { type: 'button', class: 'btn', 'aria-label': 'Stop song', onclick: () => stopSong(),
           html: '<svg viewBox="0 0 13 13"><rect x="2.5" y="2.5" width="8" height="8" rx="1.5" fill="currentColor"/></svg>Stop <kbd>Space</kbd>' })),
-      el('div', { class: 'hint', text: 'Released one fall time before each beat.' }));
+      el('div', { class: 'hint', text: 'Tempo changes apply live.' }));
 
     const mp = (name, label) => el('button', { type: 'button', class: 'btn', 'aria-label': 'Load ' + label + ' preset',
       onclick: () => { safe('preset', () => GP.Physics.loadPreset(name)); toast('Preset: <b>' + label + '</b>'); }, text: label });
@@ -2930,7 +2944,12 @@ setInterval(() => {
         el('button', { type: 'button', class: 'btn', 'aria-label': 'Turn scale lock off', text: 'Scale off', onclick: () => setScale('off', S.scale.root) })));
     const playPanel = el('div', { class: 'sub-panel' }, el('div', { class: 'cap', text: 'Play' }),
       el('div', { class: 'hint', style: 'margin-top:0', html: '<kbd>A</kbd>–<kbd>K</kbd> drop · <kbd>Z</kbd>/<kbd>X</kbd> octave · click to strike' }));
+    const tempoSlider = slider({ label: 'Tempo', min: CONFIG.tempo.min, max: CONFIG.tempo.max, step: 1, get: () => S.tempo, set: v => { S.tempo = v; }, fmt: v => v + ' BPM' });
+    const rainBtns = rainPanel.querySelectorAll('.btn');
     syncers.push(() => {
+      tempoSlider.hidden = S.mode === 'play';
+      rainBtns[0].classList.toggle('on', S.scale.type === 'pentatonic');
+      rainBtns[1].classList.toggle('on', S.scale.type === 'off');
       songPanel.hidden = S.mode !== 'songs'; machinePanel.hidden = S.mode !== 'machine';
       rainPanel.hidden = S.mode !== 'rain'; playPanel.hidden = S.mode !== 'play';
     });
@@ -2938,7 +2957,7 @@ setInterval(() => {
       el('div', { class: 'field' }, el('div', { class: 'label' }, el('span', { text: 'Mode' })),
         segmented([{ value: 'play', label: 'Play' }, { value: 'songs', label: 'Songs' }, { value: 'machine', label: 'Machine' }, { value: 'rain', label: 'Rain' }],
           () => S.mode, setMode, 'Mode')),
-      playPanel, songPanel, machinePanel, rainPanel);
+      tempoSlider, playPanel, songPanel, machinePanel, rainPanel);
   }
 
   function fallTimeOf(h) {
@@ -2969,7 +2988,6 @@ setInterval(() => {
       el('div', { class: 'field' }, el('div', { class: 'label' }, el('span', { text: 'Instrument' })),
         segmented([{ value: 'grand', label: 'Grand' }, { value: 'musicbox', label: 'Music box' }, { value: 'marimba', label: 'Marimba' }],
           () => S.instrument, v => { S.instrument = v; toast('Instrument: <b>' + { grand: 'Grand piano', musicbox: 'Music box', marimba: 'Marimba' }[v] + '</b>'); }, 'Instrument')),
-      slider({ label: 'Tempo', min: CONFIG.tempo.min, max: CONFIG.tempo.max, step: 1, get: () => S.tempo, set: v => { S.tempo = v; }, fmt: v => v + ' BPM' }),
       slider({ label: 'Drop height', min: CONFIG.drop.minHeight, max: CONFIG.drop.maxHeight, step: 10, get: () => S.dropHeight, set: v => { S.dropHeight = v; },
         fmt: v => v + ' px · ' + (v / CONFIG.pixelsPerMeter).toFixed(2) + ' m',
         after: v => {
