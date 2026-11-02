@@ -53,7 +53,7 @@ Predict, Observe, Explain activities (sketch the shape before dropping 1000 ball
 ## Shared rules (identical in all four Amplitude Labs prompts)
 
 ### Where the code goes
-- Repo: https://github.com/CaydenAuyang/hackathon-physics (public). If you are not already inside a clone of it, `git clone` it and work there.
+- Repo: https://github.com/CaydenAuyang/amplitude-labs (public). If you are not already inside a clone of it, `git clone` it and work there.
 - Create ONLY `stats/index.html`. Do not create, edit or delete anything else in the repo: three teammates are pushing their own labs to the same repo right now.
 - One self-contained file with inline CSS and JS. The only external resources allowed are Matter.js `https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js` and Google Fonts (Inter, JetBrains Mono). No other libraries, no build step, no image files. It must work on GitHub Pages and when the file is double-clicked.
 - After each working phase: `git add stats && git commit -m "<short message>" && git pull --rebase && git push`. If the push is refused for permissions, keep building and tell me at the end.
@@ -79,4 +79,4 @@ Predict, Observe, Explain activities (sketch the shape before dropping 1000 ball
 ### Before you finish
 - Serve the page (`python3 -m http.server`) and confirm the browser console shows zero errors. If you cannot run a browser, at least extract the script and run `node --check` on it.
 - Checklist: every button works, every layer toggles, every scenario loads, Present and Help work, no console errors, and it looks finished, not like a prototype.
-- Reply with what you built, the live link https://caydenauyang.github.io/hackathon-physics/stats/ (it updates about a minute after a push), and three sentences I can say in the demo.
+- Reply with what you built, the live link https://caydenauyang.github.io/amplitude-labs/stats/ (it updates about a minute after a push), and three sentences I can say in the demo.
