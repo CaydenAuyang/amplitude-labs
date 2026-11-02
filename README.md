@@ -4,18 +4,20 @@ Team Amplitude's entry for the Pomfret School Fall Hack-a-Thon 2026: four intera
 
 **All labs:** https://caydenauyang.github.io/amplitude-labs/
 
-| # | Lab | Department | Live link | Prompt |
-| --- | --- | --- | --- | --- |
-| 1 | Orbit Lab | Physics | https://caydenauyang.github.io/amplitude-labs/physics/ | [prompts/1-physics-orbit-lab.md](prompts/1-physics-orbit-lab.md) |
-| 2 | Gravity Piano | Music | https://caydenauyang.github.io/amplitude-labs/music/ | [prompts/2-music-gravity-piano.md](prompts/2-music-gravity-piano.md) |
-| 3 | Lingo Drop | World Languages (Spanish, French) | https://caydenauyang.github.io/amplitude-labs/languages/ | [prompts/3-languages-lingo-drop.md](prompts/3-languages-lingo-drop.md) |
-| 4 | Galton Lab | Statistics | https://caydenauyang.github.io/amplitude-labs/stats/ | [prompts/4-stats-galton-lab.md](prompts/4-stats-galton-lab.md) |
+| # | Lab | Department | Built by | Live link | Prompt |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Orbit Lab | Physics | Cayden ([CaydenAuyang](https://github.com/CaydenAuyang)) | https://caydenauyang.github.io/amplitude-labs/physics/ | [prompts/1-physics-orbit-lab.md](prompts/1-physics-orbit-lab.md) |
+| 2 | Gravity Piano | Music | Christoph ([cortenburg28-arch](https://github.com/cortenburg28-arch)) | https://caydenauyang.github.io/amplitude-labs/music/ | [prompts/2-music-gravity-piano.md](prompts/2-music-gravity-piano.md) |
+| 3 | Lingo Drop | World Languages (Spanish, French) | James H. ([jhayward27-ui](https://github.com/jhayward27-ui)) | https://caydenauyang.github.io/amplitude-labs/languages/ | [prompts/3-languages-lingo-drop.md](prompts/3-languages-lingo-drop.md) |
+| 4 | Galton Lab | Statistics | Ronan ([roconnell-code](https://github.com/roconnell-code)) | https://caydenauyang.github.io/amplitude-labs/stats/ | [prompts/4-stats-galton-lab.md](prompts/4-stats-galton-lab.md) |
 
 Prompts go from hardest (1) to simplest (4).
 
 ## Team
 
 Cayden (lead), Christoph, Ronan, James H.
+
+A note on the commit history: Ronan's machine couldn't push to GitHub, so Galton Lab was committed from Cayden's account. Christoph's coding agent committed Gravity Piano under the name "claude". Cayden restyled all four labs to match the hub after they were built.
 
 ## How to build your lab
 
