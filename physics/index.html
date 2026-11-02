@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Orbit Lab · Amplitude Labs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Host+Grotesk:wght@300;400&family=Martian+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #070A12; --text: #E8EDF6; --muted: #8A94A7;
@@ -182,6 +182,66 @@
   #layersPop { position: absolute; right: 16px; top: 62px; width: 280px; z-index: 25; padding: 10px; background: rgba(14,18,30,.9); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; backdrop-filter: blur(14px); box-shadow: 0 20px 50px -20px rgba(0,0,0,.8); opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .18s, transform .18s; }
   #layersPop.show { opacity: 1; transform: none; pointer-events: auto; }
   @media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; } }
+
+  /* ---------- Editorial restyle to match the Amplitude Labs hub (ink, paper, hairlines, one accent) ---------- */
+  :root {
+    --bg: #0d0d0c; --text: #f4f3ef; --muted: rgba(244,243,239,.55);
+    --glass: transparent; --line: rgba(244,243,239,.14);
+    --mono: 'Martian Mono', ui-monospace, monospace;
+    --hot: #ff5a36;
+  }
+  body { font-family: 'Host Grotesk', 'Helvetica Neue', Arial, sans-serif; font-weight: 300; background: #0d0d0c; background-image: none; }
+  .topbar, #sidebar, .sec, #hudB, #layersPop, .overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .topbar { background: #0d0d0c; padding: 0 20px; }
+  .back { font-weight: 400; border-radius: 0; padding: 6px 0; }
+  .back:hover { background: none; }
+  .labname { font-weight: 400; font-size: 19px; letter-spacing: -.02em; }
+  .logo { display: none; }
+  .pill { font-family: var(--mono); font-weight: 400; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: none; border: 1px solid var(--line); }
+  .tbtn { border-radius: 999px; background: none; font-family: var(--mono); font-weight: 400; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; }
+  .tbtn:hover, .tbtn.on { background: #f4f3ef; color: #0d0d0c; border-color: #f4f3ef; }
+  .tbtn:hover kbd, .tbtn.on kbd { color: #0d0d0c; border-color: rgba(13,13,12,.3); }
+  kbd { background: none; border-radius: 3px; }
+  #sidebar { background: #0d0d0c; padding: 0; gap: 0; }
+  .sec { background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+  .sec-h { font-family: var(--mono); font-weight: 400; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; border-radius: 0; padding: 16px 20px; }
+  .sec-b { padding-left: 20px !important; padding-right: 20px !important; }
+  .scen button { border-radius: 0; background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 0; }
+  .scen button:hover { background: none; color: var(--hot); }
+  .scen button.on { background: none; border-color: var(--line); color: var(--hot); }
+  .scen .k { border-radius: 0; background: none; border: 1px solid var(--line); }
+  .scen .t { font-weight: 400; font-size: 14px; }
+  .ctl-top .v { color: var(--text); }
+  input[type=range]::-webkit-slider-runnable-track { height: 1px; border-radius: 0; background: linear-gradient(90deg, #f4f3ef var(--p, 50%), rgba(244,243,239,.2) var(--p, 50%)); }
+  input[type=range]::-moz-range-track { height: 1px; border-radius: 0; background: linear-gradient(90deg, #f4f3ef var(--p, 50%), rgba(244,243,239,.2) var(--p, 50%)); }
+  input[type=range]::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: -5.5px; background: #f4f3ef; box-shadow: none; }
+  input[type=range]::-moz-range-thumb { width: 12px; height: 12px; background: #f4f3ef; box-shadow: none; }
+  input[type=range]:hover::-webkit-slider-thumb, input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(255,90,54,.35); }
+  .seg { border-radius: 999px; background: none; }
+  .seg button { border-radius: 999px; font-size: 10.5px; }
+  .seg button.on { background: #f4f3ef; color: #0d0d0c; }
+  .btn { border-radius: 999px; background: none; font-family: var(--mono); font-weight: 400; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; }
+  .btn:hover { background: #f4f3ef; color: #0d0d0c; border-color: #f4f3ef; }
+  .btn.primary { background: #f4f3ef; color: #0d0d0c; border-color: #f4f3ef; font-weight: 400; }
+  .btn.primary:hover { filter: none; background: var(--hot); border-color: var(--hot); color: #0d0d0c; }
+  .tog .sw { border-radius: 999px; background: rgba(244,243,239,.16); }
+  .tog[aria-checked=true] .sw { background: var(--hot); }
+  .tog .lbl { font-size: 14px; }
+  .badge { font-family: var(--mono); font-weight: 400; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border-radius: 0; }
+  .sub { font-family: var(--mono); font-weight: 400; font-size: 10px; }
+  canvas.chart { border-radius: 0; background: none; }
+  .mini { font-family: var(--mono); font-weight: 400; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border-radius: 999px; color: var(--text); background: none; border: 1px solid var(--line); }
+  .mini:hover { background: #f4f3ef; color: #0d0d0c; }
+  table.kt th { font-family: var(--mono); font-weight: 400; text-transform: uppercase; letter-spacing: .06em; }
+  .eq { background: none; border: 0; border-left: 1px solid var(--hot); border-radius: 0; color: var(--text); }
+  ul.mods code { color: var(--text); }
+  #hudB { background: #0d0d0c; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; }
+  .overlay { background: rgba(13,13,12,.72); }
+  .modal { background: #0d0d0c; border: 1px solid var(--line); border-radius: 0; box-shadow: none; padding: 36px; }
+  .modal h2 { background: none; color: var(--text); font-weight: 300; font-size: 64px; letter-spacing: -.045em; line-height: .95; margin: 10px 0 14px; }
+  .modal .eyebrow { color: var(--muted); font-size: 10.5px; letter-spacing: .1em; }
+  .modal ul.try li::before { background: var(--hot); box-shadow: none; border-radius: 0; width: 6px; height: 6px; }
+  #layersPop { background: #0d0d0c; border-radius: 0; box-shadow: none; }
 </style>
 </head>
 <body>
@@ -236,7 +296,7 @@
       <div class="sec-b"><div class="scen" id="scenList"></div></div>
     </section>
 
-    <section class="sec" data-sec="controls">
+    <section class="sec closed" data-sec="controls">
       <button class="sec-h" aria-label="Toggle Controls section">Controls <span class="chev">▼</span></button>
       <div class="sec-b">
         <div class="ctl">
@@ -262,7 +322,7 @@
       </div>
     </section>
 
-    <section class="sec" data-sec="layers">
+    <section class="sec closed" data-sec="layers">
       <button class="sec-h" aria-label="Toggle Layers section">Layers <span class="chev">▼</span></button>
       <div class="sec-b" id="layerList"></div>
     </section>
