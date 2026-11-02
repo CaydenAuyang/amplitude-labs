@@ -59,7 +59,7 @@
     border-left: 1px solid var(--line); background: rgba(7,10,18,0.35); transition: margin-right .25s ease, opacity .25s;
     scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.12) transparent;
   }
-  body.present #sidebar { margin-right: -340px; opacity: 0; pointer-events: none; }
+  body.present #sidebar { display: none; }
 
   /* ---------- glass sections ---------- */
   .sec { background: var(--glass); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); flex: none; }
@@ -286,6 +286,8 @@
           <div class="sub">Energy per unit mass · AU²/yr²</div>
           <canvas class="chart" id="eChart" aria-label="Energy chart"></canvas>
           <div class="legend"><span><i style="background:#22D3EE"></i>Kinetic</span><span><i style="background:#A78BFA"></i>Potential</span><span><i style="background:#F8FAFC"></i>Total</span></div>
+          <div class="sub">Speed · AU/yr</div>
+          <canvas class="chart" id="vChart" style="height:64px" aria-label="Speed chart"></canvas>
         </div>
         <div class="sub subrow">Kepler's third law <button class="mini" id="btnCSV" aria-label="Copy Kepler table as CSV">Copy as CSV</button></div>
         <table class="kt" id="kTable"></table>
@@ -335,6 +337,17 @@ const CONFIG = {
   BACKGROUND_STARS: [140, 90, 50],     // stars per parallax layer (far → near)
   PARALLAX: [0.04, 0.12, 0.28],
   WARPS: [0, 0.5, 1, 2, 4, 8],
+  FIG8_SCALE: 250,
+  SWEEP_SLICES: 12,              // Kepler sweep: slices per orbit (equal time each)
+  WELL_SPACING: 40,              // gravity-well grid spacing in world px
+  WELL_STRENGTH: 4200,           // how far grid points sag toward a 1 M☉ mass
+  WELL_MAX: 70,                  // cap on grid displacement in world px
+  VEL_ARROW: 34,                 // velocity arrow length per px/step
+  FORCE_ARROW: 55,               // gravity arrow length at 1 AU from 1 M☉               // world px per length unit in the figure-eight
+  ASSIST: {                      // gravity assist scenario (tuned so the probe gains energy)
+    PLANET_AU: 1.6, PLANET_MASS: 0.02, PLANET_ANGLE: 4.94,
+    PROBE_PERI_AU: 0.7, PROBE_APO_AU: 2.0,
+  },
 };
 
 const { Engine, Composite, Bodies, Body, Events, Query, Render, Constraint, Vector } = Matter;
@@ -377,7 +390,7 @@ let paletteIdx = 0;
 
 function planetRadius(mSun) {
   const mj = mSun / CONFIG.JUPITER;
-  return Math.max(5, Math.min(16, 4 + 3.2 * Math.cbrt(mj)));
+  return Math.max(6, Math.min(16, 4.5 + 3.2 * Math.cbrt(mj)));
 }
 function starRadius(mSun) { return CONFIG.STAR_RADIUS * Math.pow(mSun, 0.4); }
 
@@ -979,12 +992,130 @@ function drawGauge(a, v, bound) {
   ctx.restore();
 }
 
+function drawWell() {
+  const vb = visibleBounds(), sp = CONFIG.WELL_SPACING;
+  const src = attractors().filter(b => b.orb.m > 1e-3);
+  const x0 = Math.floor(vb.min.x / sp) * sp - sp, x1 = vb.max.x + sp, y0 = Math.floor(vb.min.y / sp) * sp - sp, y1 = vb.max.y + sp;
+  const cols = Math.round((x1 - x0) / sp) + 1, rows = Math.round((y1 - y0) / sp) + 1;
+  if (cols * rows > 6000) return;
+  const P = new Float32Array(cols * rows * 3);
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+    let x = x0 + i * sp, y = y0 + j * sp, dx = 0, dy = 0, depth = 0;
+    for (const s of src) {
+      const ex = s.position.x - x, ey = s.position.y - y, r = Math.hypot(ex, ey) + 1e-6;
+      const d = Math.min(CONFIG.WELL_MAX, r * 0.8, CONFIG.WELL_STRENGTH * s.orb.m * S.gMult / (r + 30));
+      dx += ex / r * d; dy += ey / r * d; depth += d;
+    }
+    const q = worldToScreen(x + dx, y + dy), k = (j * cols + i) * 3;
+    P[k] = q.x; P[k + 1] = q.y; P[k + 2] = Math.min(1, depth / CONFIG.WELL_MAX);
+  }
+  ctx.save();
+  ctx.lineWidth = 1;
+  const seg = (a, b) => {
+    const d = (P[a + 2] + P[b + 2]) / 2;
+    ctx.strokeStyle = `rgba(${Math.round(139 - 105 * d)},${Math.round(92 + 119 * d)},${Math.round(246 - 8 * d)},${0.10 + d * 0.45})`;
+    ctx.beginPath(); ctx.moveTo(P[a], P[a + 1]); ctx.lineTo(P[b], P[b + 1]); ctx.stroke();
+  };
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+    const k = (j * cols + i) * 3;
+    if (i < cols - 1) seg(k, k + 3);
+    if (j < rows - 1) seg(k, k + cols * 3);
+  }
+  ctx.restore();
+}
+
+function arrow(x, y, dx, dy, color, w) {
+  const len = Math.hypot(dx, dy);
+  if (len < 3) return;
+  const ex = x + dx, ey = y + dy, ang = Math.atan2(dy, dx), hs = Math.min(9, 4 + len * 0.12);
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex - Math.cos(ang) * hs * 0.6, ey - Math.sin(ang) * hs * 0.6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - hs * Math.cos(ang - 0.42), ey - hs * Math.sin(ang - 0.42));
+  ctx.lineTo(ex - hs * Math.cos(ang + 0.42), ey - hs * Math.sin(ang + 0.42)); ctx.closePath(); ctx.fill();
+}
+function drawVectors() {
+  const s = scale();
+  const aRef = G0 / (CONFIG.AU * CONFIG.AU);   // gravity at 1 AU from 1 M☉
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4;
+  for (const b of bodies) {
+    if (b.orb.kind === 'asteroid') continue;
+    const p = worldToScreen(b.position.x, b.position.y);
+    if (p.x < -100 || p.y < -100 || p.x > W + 100 || p.y > H + 100) continue;
+    const h = b.orb.host;
+    const vx = b.velocity.x - (h && b.orb.kind !== 'star' ? h.vx : 0), vy = b.velocity.y - (h && b.orb.kind !== 'star' ? h.vy : 0);
+    arrow(p.x, p.y, vx * CONFIG.VEL_ARROW * s, vy * CONFIG.VEL_ARROW * s, '#22D3EE', 2);
+    const a = Math.hypot(b.orb.ax, b.orb.ay);
+    if (a > 0) {
+      // square-root scale keeps both near and far planets readable
+      const L = Math.min(170, CONFIG.FORCE_ARROW * Math.sqrt(a / aRef)) * Math.max(0.6, s);
+      arrow(p.x, p.y, b.orb.ax / a * L, b.orb.ay / a * L, '#A78BFA', 2);
+    }
+  }
+  ctx.restore();
+}
+
+function drawSweep() {
+  if (!sweep.body || sweep.body !== S.selected || !sweep.slices.length) return;
+  const s = scale();
+  ctx.save();
+  ctx.font = "600 11px 'JetBrains Mono', monospace";
+  if (document.body.classList.contains('present')) ctx.font = "600 15px 'JetBrains Mono', monospace";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const labels = [];
+  for (const sl of sweep.slices) {
+    if (sl.pts.length < 4) continue;
+    const odd = sl.idx % 2;
+    const hq = worldToScreen(sl.hx, sl.hy);
+    ctx.fillStyle = odd ? 'rgba(139,92,246,0.30)' : 'rgba(34,211,238,0.24)';
+    ctx.strokeStyle = odd ? 'rgba(167,139,250,0.7)' : 'rgba(103,232,249,0.65)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(hq.x, hq.y);
+    for (let i = 0; i < sl.pts.length; i += 2) { const q = worldToScreen(sl.pts[i], sl.pts[i + 1]); ctx.lineTo(q.x, q.y); }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    if (sl.n >= sweep.len) {
+      const m = Math.floor(sl.pts.length / 4) * 2;
+      const q = worldToScreen(sl.hx + (sl.pts[m] - sl.hx) * 0.62, sl.hy + (sl.pts[m + 1] - sl.hy) * 0.62);
+      labels.push([q.x, q.y, (sl.area / (CONFIG.AU * CONFIG.AU)).toFixed(3)]);
+    }
+  }
+  for (const [x, y, t] of labels) {
+    const w = ctx.measureText(t).width + 10;
+    ctx.fillStyle = 'rgba(7,10,18,0.75)'; roundRect(x - w / 2, y - 9, w, 18, 5); ctx.fill();
+    ctx.fillStyle = '#F8FAFC'; ctx.fillText(t, x, y);
+  }
+  ctx.restore();
+}
+
+function drawProbe(b) {
+  const p = worldToScreen(b.position.x, b.position.y);
+  if (p.x < -50 || p.y < -50 || p.x > W + 50 || p.y > H + 50) return;
+  const ang = Math.atan2(b.velocity.y, b.velocity.x), r = 6;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 16);
+  g.addColorStop(0, hexA(b.orb.color, 0.55)); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 16, 0, Math.PI * 2); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.translate(p.x, p.y); ctx.rotate(ang);
+  ctx.fillStyle = '#F8FAFC';
+  ctx.beginPath(); ctx.moveTo(r * 1.4, 0); ctx.lineTo(-r, r * 0.75); ctx.lineTo(-r * 0.5, 0); ctx.lineTo(-r, -r * 0.75); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
 function render() {
   drawBackground();
+  if (S.layers.well) drawWell();
+  if (S.layers.sweep) drawSweep();
   if (S.layers.trails) drawTrails();
-  for (const b of bodies) if (b.orb.kind !== 'star') drawPlanet(b);
+  for (const b of bodies) if (b.orb.kind === 'planet' || b.orb.kind === 'asteroid') drawPlanet(b);
+  for (const b of bodies) if (b.orb.kind === 'probe') drawProbe(b);
   for (const b of bodies) if (b.orb.kind === 'star') drawStar(b);
   drawParticles();
+  if (S.layers.vectors) drawVectors();
+  // X-ray: dim the art so Matter's wireframes on the top canvas stand out
+  if (S.layers.xray) { ctx.fillStyle = 'rgba(7,10,18,0.6)'; ctx.fillRect(0, 0, W, H); }
   drawSelection();
   drawSlingshot();
 }
@@ -999,7 +1130,39 @@ function recordOrbit(b) {
   }
 }
 
-const hist = { body: null, ke: [], pe: [], e: [] };
+const hist = { body: null, ke: [], pe: [], e: [], v: [] };
+
+// Kepler sweep: slices of equal duration, each storing the arc it swept
+const sweep = { body: null, len: 0, slices: [] };
+function resetSweep() { sweep.body = null; sweep.slices = []; }
+function recordSweep() {
+  const b = S.selected;
+  if (!b || b.orb.kind === 'star' || !bodies.includes(b)) { if (sweep.body) resetSweep(); return; }
+  const h = b.orb.host;
+  if (!h) return;
+  if (sweep.body !== b) {
+    // slice length = orbital period / N, from the current energy (a = -GM / 2E)
+    const vx = b.velocity.x - h.vx, vy = b.velocity.y - h.vy;
+    const mu = G() * h.m, r = Math.hypot(b.position.x - h.x, b.position.y - h.y);
+    const eps = 0.5 * (vx * vx + vy * vy) - mu / r;
+    if (eps >= 0) return;
+    const a = -mu / (2 * eps);
+    sweep.body = b; sweep.slices = [];
+    sweep.len = Math.max(4, Math.round(2 * Math.PI * Math.sqrt(a * a * a / mu) / CONFIG.SWEEP_SLICES));
+  }
+  let cur = sweep.slices[sweep.slices.length - 1];
+  if (!cur || cur.n >= sweep.len) {
+    cur = { pts: [b.position.x, b.position.y], hx: h.x, hy: h.y, area: 0, n: 0, idx: (sweep.count = (sweep.count || 0) + 1) };
+    sweep.slices.push(cur);
+    if (sweep.slices.length > CONFIG.SWEEP_SLICES) sweep.slices.shift();
+    return;
+  }
+  const px = cur.pts[cur.pts.length - 2], py = cur.pts[cur.pts.length - 1];
+  // triangle star → previous point → new point
+  cur.area += 0.5 * Math.abs((px - h.x) * (b.position.y - h.y) - (py - h.y) * (b.position.x - h.x));
+  cur.pts.push(b.position.x, b.position.y);
+  cur.hx = h.x; cur.hy = h.y; cur.n++;
+}
 function physicsStep() {
   Engine.update(engine, STEP);
   S.simSteps++;
@@ -1011,11 +1174,13 @@ function physicsStep() {
   }
   const sel = S.selected;
   if (sel && S.simSteps % CONFIG.ENERGY_EVERY === 0) {
-    if (hist.body !== sel) { hist.body = sel; hist.ke = []; hist.pe = []; hist.e = []; }
+    if (hist.body !== sel) { hist.body = sel; hist.ke = []; hist.pe = []; hist.e = []; hist.v = []; }
     const en = energyOf(sel);
     hist.ke.push(en.ke); hist.pe.push(en.pe); hist.e.push(en.e);
-    if (hist.ke.length > CONFIG.ENERGY_HISTORY) { hist.ke.shift(); hist.pe.shift(); hist.e.shift(); }
+    hist.v.push(en.h ? toAUyr(Math.hypot(sel.velocity.x - en.h.vx, sel.velocity.y - en.h.vy)) : 0);
+    if (hist.ke.length > CONFIG.ENERGY_HISTORY) { hist.ke.shift(); hist.pe.shift(); hist.e.shift(); hist.v.shift(); }
   }
+  if (S.layers.sweep) recordSweep();
   // drop bodies that wander far away
   for (const b of bodies.slice()) {
     if (b.orb.kind === 'star') continue;
@@ -1125,6 +1290,7 @@ function launch() {
   zeroMomentum();
   S.selected = b;
   burst(b.position.x, b.position.y, b.orb.color, 10);
+  $('hudB').style.opacity = '0';
 }
 
 art.addEventListener('wheel', e => {
@@ -1208,6 +1374,47 @@ const SCENARIOS = [
       }
     },
   },
+  {
+    key: '5', name: 'Gravity assist',
+    caption: 'Gravity assist', sub: 'The probe passes just behind a moving giant planet, gets pulled along, and leaves faster. Watch its speed and total energy jump.',
+    zoom: 0.8,
+    load() {
+      const st = makeStar(S.starMass, C.x, C.y); S.starBody = st;
+      const g = orbiter(st, CONFIG.ASSIST.PLANET_AU, { angle: CONFIG.ASSIST.PLANET_ANGLE, m: CONFIG.ASSIST.PLANET_MASS, body: { name: 'Giant planet', color: '#FBBF24', r: 12 } });
+      const rp = CONFIG.ASSIST.PROBE_PERI_AU * CONFIG.AU, ra = CONFIG.ASSIST.PROBE_APO_AU * CONFIG.AU;
+      const vp = Math.sqrt(2 * G() * st.orb.m * ra / (rp * (rp + ra)));
+      const p = addBody({ kind: 'probe', m: 0, r: 4, color: '#22D3EE', name: 'Probe', x: st.position.x + rp, y: st.position.y, vx: 0, vy: -vp });
+      zeroMomentum();
+      S.selected = p;
+    },
+  },
+  {
+    key: '6', name: 'Binary stars',
+    caption: 'Binary stars · circumbinary planet', sub: 'Two half-solar-mass stars orbit their common centre. Far enough out, a planet orbits both as if they were one 1 M☉ star.',
+    load() {
+      const m = 0.5, d = 0.5 * CONFIG.AU;
+      const v = Math.sqrt(G() * m * (d / 2) * d / Math.pow(d * d + EPS2, 1.5));
+      const a = makeStar(m, C.x - d / 2, C.y, { vx: 0, vy: v, color: '#FDBA4D', name: 'Star A' });
+      makeStar(m, C.x + d / 2, C.y, { vx: 0, vy: -v, color: '#93C5FD', name: 'Star B' });
+      S.starBody = a;
+      const r = 1.7 * CONFIG.AU, vc = circularSpeed(1, r);
+      S.selected = addBody({ kind: 'planet', m: 3e-6, x: C.x, y: C.y - r, vx: -vc, vy: 0, name: 'Tatooine', color: '#34D399' });
+    },
+  },
+  {
+    key: '7', name: 'Three-body figure-eight',
+    caption: 'Three-body figure-eight', sub: 'Three equal stars chase each other around a figure eight. It is stable for a few loops, then tiny errors grow into chaos. That is the point.',
+    load() {
+      const L = CONFIG.FIG8_SCALE, m = 1;
+      const vs = Math.sqrt(G() * m / L);           // G = 1 velocity unit in px/step
+      const x1 = [-0.97000436, 0.24308753], v3 = [-0.93240737, -0.86473146];
+      const v1 = [-v3[0] / 2, -v3[1] / 2];
+      const spec = [[x1, v1, '#C4B5FD', 'Star 1'], [[-x1[0], -x1[1]], v1, '#67E8F9', 'Star 2'], [[0, 0], v3, '#FDBA4D', 'Star 3']];
+      for (const [x, v, color, name] of spec) makeStar(m, C.x + x[0] * L, C.y - x[1] * L, { vx: v[0] * vs, vy: -v[1] * vs, color, name, r: 14 });
+      S.starBody = null;
+      S.selected = null;
+    },
+  },
 ];
 
 function resetView(z) { cam.x = C.x; cam.y = C.y; cam.zoom = z || 1; S.follow = false; }
@@ -1221,6 +1428,7 @@ function loadScenario(i) {
   S.starMass = 1; syncStarSlider();
   S.layers.sweep = false;
   Object.assign(S.layers, sc.layers || {});
+  resetSweep();
   renderLayers();
   resetView(sc.zoom || 1);
   sc.load();
@@ -1290,16 +1498,18 @@ function syncStarSlider() {
   paintRange($('mS'));
 }
 $('gS').addEventListener('input', e => { S.gMult = +e.target.value; $('gV').textContent = S.gMult.toFixed(2) + '×'; paintRange(e.target); });
-$('mS').addEventListener('input', e => {
-  S.starMass = +e.target.value;
+function setStarMass(m) {
+  S.starMass = m;
   if (S.starBody && bodies.includes(S.starBody)) {
-    S.starBody.orb.m = S.starMass;
-    const r = starRadius(S.starMass);
+    S.starBody.orb.m = m;
+    const r = starRadius(m);
     Body.scale(S.starBody, r / S.starBody.orb.r, r / S.starBody.orb.r);
     S.starBody.orb.r = r;
+    S.starBody.orb.pulse = 0.6;
   }
-  $('mV').textContent = S.starMass.toFixed(2) + ' M☉'; paintRange(e.target);
-});
+  syncStarSlider();
+}
+$('mS').addEventListener('input', e => setStarMass(+e.target.value));
 $('pS').addEventListener('input', e => {
   S.nextMassMJ = massFromSlider(+e.target.value);
   $('pV').textContent = (S.nextMassMJ < 1 ? S.nextMassMJ.toFixed(2) : S.nextMassMJ.toFixed(1)) + ' M♃';
@@ -1318,6 +1528,10 @@ for (const sec of document.querySelectorAll('.sec')) {
 const LAYERS = [
   { id: 'space', key: '', name: 'Space', desc: 'Starfield, nebula, star glow (always on)', fixed: true },
   { id: 'trails', key: 'T', name: 'Trails', desc: 'Fading glowing paths' },
+  { id: 'vectors', key: 'V', name: 'Vectors', desc: 'Velocity (cyan) and gravity force (violet)' },
+  { id: 'well', key: 'G', name: 'Gravity well', desc: 'A picture of field strength, not real GR' },
+  { id: 'sweep', key: 'K', name: 'Kepler sweep', desc: 'Equal areas in equal times (selected planet)' },
+  { id: 'xray', key: 'X', name: 'X-ray', desc: 'Matter.Render debug view of the real bodies' },
 ];
 function renderLayers() {
   const html = LAYERS.map(l => {
@@ -1331,6 +1545,9 @@ function renderLayers() {
 function toggleLayer(id) {
   if (!(id in S.layers)) return;
   S.layers[id] = !S.layers[id];
+  if (id === 'xray') setXray(S.layers.xray);
+  if (id === 'sweep') resetSweep();
+  if (id === 'sweep' && S.layers.sweep && !(S.selected && S.selected.orb.kind !== 'star')) toast('Select a planet to see its swept areas');
   renderLayers();
 }
 for (const el of [$('layerList'), $('layersPop')]) el.addEventListener('click', e => { const b = e.target.closest('.tog'); if (b) toggleLayer(b.dataset.l); });
@@ -1340,9 +1557,11 @@ document.addEventListener('click', e => { if (!e.target.closest('#layersPop') &&
 // HUD
 function updateHUD() {
   const yrs = S.simSteps / STEPS_PER_YEAR;
-  const planets = bodies.filter(b => b.orb.kind === 'planet').length;
-  const ast = bodies.filter(b => b.orb.kind === 'asteroid').length;
-  $('hudTR').innerHTML = `t = <b>${yrs.toFixed(2)}</b> yr<br>speed <b>${S.warp === 0 ? 'paused' : S.warp + '×'}</b><br>${planets} planets${ast ? ' · ' + ast + ' asteroids' : ''}`;
+  const count = {};
+  for (const b of bodies) count[b.orb.kind] = (count[b.orb.kind] || 0) + 1;
+  const parts = [['star', 'star'], ['planet', 'planet'], ['probe', 'probe'], ['asteroid', 'asteroid']]
+    .filter(([k]) => count[k]).map(([k, w]) => `${count[k]} ${w}${count[k] > 1 ? 's' : ''}`);
+  $('hudTR').innerHTML = `t = <b>${yrs.toFixed(2)}</b> yr<br>speed <b>${S.warp === 0 ? 'paused' : S.warp + '×'}</b><br>${parts.join(' · ') || 'empty space'}`;
   if (frame.n === undefined) frame.n = 0;
   if ((frame.n++ % 6) === 0) updateLive();
 }
@@ -1374,6 +1593,30 @@ function updateLive() {
     $('lvEcc').textContent = en.ecc === null ? '—' : en.ecc.toFixed(3) + (en.ecc < 0.02 ? ' (circle)' : en.ecc < 1 ? ' (ellipse)' : ' (open)');
   }
   drawEnergyChart();
+  drawSpeedChart();
+}
+
+function drawSpeedChart() {
+  const cv = $('vChart');
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w) return;
+  const d = Math.min(window.devicePixelRatio || 1, 2);
+  if (cv.width !== Math.round(w * d)) { cv.width = Math.round(w * d); cv.height = Math.round(h * d); }
+  const c = cv.getContext('2d');
+  c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, h);
+  const a = hist.v, n = a.length;
+  if (n < 2 || hist.body !== S.selected) return;
+  let mx = 1e-6; for (const v of a) mx = Math.max(mx, v); mx *= 1.15;
+  const gr = c.createLinearGradient(0, 0, 0, h);
+  gr.addColorStop(0, 'rgba(251,191,36,0.35)'); gr.addColorStop(1, 'rgba(251,191,36,0)');
+  c.beginPath(); c.moveTo(0, h);
+  for (let i = 0; i < n; i++) c.lineTo(i / (CONFIG.ENERGY_HISTORY - 1) * w, h - a[i] / mx * (h - 6));
+  c.lineTo((n - 1) / (CONFIG.ENERGY_HISTORY - 1) * w, h); c.closePath(); c.fillStyle = gr; c.fill();
+  c.beginPath();
+  for (let i = 0; i < n; i++) { const x = i / (CONFIG.ENERGY_HISTORY - 1) * w, y = h - a[i] / mx * (h - 6); i ? c.lineTo(x, y) : c.moveTo(x, y); }
+  c.strokeStyle = '#FBBF24'; c.lineWidth = 1.6; c.stroke();
+  c.font = "10px 'JetBrains Mono', monospace"; c.fillStyle = '#FDE68A'; c.textAlign = 'right';
+  c.fillText(a[n - 1].toFixed(2), w - 4, 12);
 }
 
 function drawEnergyChart() {
@@ -1438,13 +1681,14 @@ const KEYS = [
   ['Drag', 'Slingshot launch from empty space'], ['Click', 'Select a body'], ['Drag body', 'Grab and move a body'],
   ['Scroll', 'Zoom around the cursor'], ['Right-drag', 'Pan (or hold Space and drag)'],
   ['Space', 'Pause / resume (tap)'], ['1 – 7', 'Load a scenario'], ['F', 'Follow the selected body'], ['R', 'Reset the view'],
-  ['Delete', 'Remove the selected body'], ['T', 'Trails layer'], ['P', 'Present mode'], ['?', 'This help'], ['Esc', 'Close overlays'],
+  ['Delete', 'Remove the selected body'], ['T', 'Trails layer'], ['V', 'Vectors layer'], ['G', 'Gravity well layer'],
+  ['K', 'Kepler sweep layer'], ['X', 'X-ray layer (Matter.Render)'], ['P', 'Present mode'], ['?', 'This help'], ['Esc', 'Close overlays'],
 ];
 $('keyList').innerHTML = KEYS.map(([k, d]) => `<kbd>${k}</kbd><span>${d}</span>`).join('');
 function showHelp(v) { $('help').classList.toggle('show', v); }
 $('btnHelp').addEventListener('click', () => showHelp(!$('help').classList.contains('show')));
 $('btnHelpClose').addEventListener('click', () => showHelp(false));
-function togglePresent() { document.body.classList.toggle('present'); $('btnPresent').classList.toggle('on'); setTimeout(resize, 260); }
+function togglePresent() { document.body.classList.toggle('present'); $('btnPresent').classList.toggle('on'); resize(); }
 $('btnPresent').addEventListener('click', togglePresent);
 function closeIntro() { $('intro').classList.remove('show'); }
 $('btnStart').addEventListener('click', closeIntro);
@@ -1464,6 +1708,10 @@ window.addEventListener('keydown', e => {
   const lower = k.toLowerCase();
   if (lower === 'p') togglePresent();
   else if (lower === 't') toggleLayer('trails');
+  else if (lower === 'v') toggleLayer('vectors');
+  else if (lower === 'g') toggleLayer('well');
+  else if (lower === 'k') toggleLayer('sweep');
+  else if (lower === 'x') toggleLayer('xray');
   else if (lower === 'f') { if (S.selected) { S.follow = !S.follow; toast(S.follow ? 'Following ' + S.selected.orb.name : 'Follow off'); } else toast('Select a body first'); }
   else if (lower === 'r') { resetView(SCENARIOS[S.scenario] && SCENARIOS[S.scenario].zoom); toast('View reset'); }
   else if (k === 'Delete' || k === 'Backspace') { if (S.selected) { const n = S.selected.orb.name; if (S.selected === S.starBody) S.starBody = null; removeBody(S.selected); toast(n + ' removed'); } }
@@ -1488,12 +1736,57 @@ const MODULES = [
   ['Query', 'Query.point finds which body you clicked.'],
   ['Constraint', 'A spring from the pointer when you drag a body.'],
   ['Vector', 'Distances, directions and speeds.'],
+  ['Render', 'The X-ray layer: Matter\'s own wireframe debug view, aligned to our camera with Render.lookAt.'],
 ];
 $('modList').innerHTML = MODULES.map(([m, d]) => `<li><code>Matter.${m}</code> · ${d}</li>`).join('');
-$('lessonBox').innerHTML = '<div class="small muted">Lesson activities coming in the next build.</div>';
+const ACTIVITIES = [
+  { title: '1 · Double the star\'s mass', run: () => { loadScenario(0); setTimeout(() => { setStarMass(2); toast('Star mass doubled to 2.00 M☉'); }, 1500); },
+    p: 'Earth circles at 1 AU. If the star suddenly has twice the mass, does Earth fly off, stay put, or fall inward?',
+    o: 'The circle turns into an ellipse that dips well inside 1 AU, and the year gets much shorter.',
+    e: 'v_c = √(GM/r) grows by √2, so Earth is now too slow for a circle. It falls inward to about 1/3 AU, speeding up as it goes.' },
+  { title: '2 · Launch at exactly v_esc', run: () => loadScenario(3),
+    p: 'Three probes leave at 0.9, 1.0 and 1.1 × v_esc. Which ones come back?',
+    o: 'The 0.9 probe returns on a long ellipse. The 1.0 probe slows forever but never turns around; its total energy sits at 0.',
+    e: '½v² − GM/r = 0 gives v_esc = √(2GM/r) = √2 · v_c. The probe\'s own mass cancels out.' },
+  { title: '3 · Inner vs outer periods', run: () => loadScenario(2),
+    p: 'Mars is about 4× farther from the star than Mercury. Is its year 4× longer? 16×?',
+    o: 'In the Kepler table Mars takes about 8× as long, and T² ÷ (a³/M) is 1.00 for every planet.',
+    e: 'T² ∝ a³, so T ∝ a^1.5. 4.1^1.5 ≈ 8.3. Outer planets are both slower and have farther to go.' },
+];
+$('lessonBox').innerHTML = ACTIVITIES.map((a, i) => `<div class="card"><h4 style="display:flex;justify-content:space-between;align-items:center">${a.title}<button class="mini" data-act="${i}" aria-label="Run activity ${i + 1}">Run</button></h4>
+    <p><b>Predict.</b> ${a.p}</p><p><b>Observe.</b> ${a.o}</p><p><b>Explain.</b> ${a.e}</p></div>`).join('') + `
+  <div class="sub">Key equations</div>
+  <div class="eq">F = G·m₁·m₂ / r²</div>
+  <div class="eq">v_c = √(GM / r) &nbsp;·&nbsp; v_esc = √(2GM / r)</div>
+  <div class="eq">T² = a³ / M &nbsp;<span class="muted">(T in years, a in AU, M in M☉)</span></div>
+  <div class="small muted" style="margin:8px 0 4px">The gravity-well grid is a picture of field strength: points sag toward masses by an amount that grows with mass and shrinks with distance. It is not a real general-relativity calculation.</div>
+  <div class="sub">Discussion</div>
+  <ol class="qs">
+    <li>Neither v_c nor Kepler's third law contains the planet's mass. Test it with the Next planet mass slider. Why does it cancel?</li>
+    <li>In the energy chart, kinetic and potential energy trade places but the total stays flat. In the gravity assist (5) the total jumps. Where did that energy come from?</li>
+    <li>The figure-eight (7) is exactly periodic on paper but falls apart here. What does that say about predicting three-body systems?</li>
+  </ol>`;
+$('lessonBox').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) ACTIVITIES[+b.dataset.act].run(); });
 
 // ---------- X-ray (Matter.Render debug overlay) ----------
 let xrayRender = null;
+function setXray(on) {
+  const cv = $('xray');
+  if (on && !xrayRender) {
+    xrayRender = Render.create({
+      canvas: cv, engine,
+      options: {
+        width: W, height: H, pixelRatio: DPR, hasBounds: true,
+        wireframes: true, background: 'transparent', wireframeBackground: 'transparent',
+        showVelocity: true, showCollisions: true, showAngleIndicator: true, showBounds: false,
+      },
+    });
+  }
+  cv.classList.toggle('on', on);
+  if (!xrayRender) return;
+  if (on) { Render.lookAt(xrayRender, visibleBounds()); Render.run(xrayRender); }
+  else Render.stop(xrayRender);
+}
 
 // ---------- boot ----------
 window.addEventListener('resize', resize);
@@ -1529,14 +1822,6 @@ if (location.search.includes('selftest')) {
   loadScenario(0);
 } else {
   $('intro').classList.add('show');
-}
-if (location.search.includes('dbgdrag')) {
-  closeIntro();
-  setTimeout(() => {
-    const r = art.getBoundingClientRect(), p = worldToScreen(C.x + 300, C.y);
-    const ev = (t, x, y, b) => art.dispatchEvent(new PointerEvent(t, { clientX: r.left + x, clientY: r.top + y, button: b || 0, pointerId: 1, bubbles: true }));
-    ev('pointerdown', p.x, p.y); ev('pointermove', p.x + 10, p.y + 70);
-  }, 1500);
 }
 requestAnimationFrame(frame);
 </script>
