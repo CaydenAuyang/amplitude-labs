@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galton Lab · Amplitude Labs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070A12;
+    --text: #E8EDF6;
+    --muted: #8A94A7;
+    --accent: #38BDF8;
+    --violet: #A78BFA;
+    --glass: rgba(255,255,255,0.04);
+    --line: rgba(255,255,255,0.08);
+    --radius: 14px;
+    --bar: 56px;
+    --side: 340px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(900px 480px at 12% -10%, rgba(56,189,248,0.18), transparent 55%),
+      radial-gradient(700px 420px at 100% 0%, rgba(167,139,250,0.14), transparent 50%),
+      var(--bg);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input { font-family: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:focus-visible, input:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .num, kbd, .formula, canvas { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  #app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+  header {
+    height: var(--bar);
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(7,10,18,0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .back {
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    transition: color .2s ease;
+  }
+  .back:hover { color: var(--text); }
+  .lab-name { font-weight: 650; letter-spacing: -0.02em; font-size: 16px; }
+  .pill {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(56,189,248,0.45);
+    background: rgba(56,189,248,0.12);
+    border-radius: 999px;
+    padding: 4px 8px;
+  }
+  .spacer { flex: 1; }
+  .bar-btn, .btn, .scenario, .seg button, .switch {
+    transition: background .2s ease, border-color .2s ease, transform .18s ease, color .2s ease;
+  }
+  .bar-btn {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--glass);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 550;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bar-btn:hover, .btn:hover, .scenario:hover { border-color: rgba(56,189,248,0.55); background: rgba(56,189,248,0.1); }
+  .bar-btn:active, .btn:active { transform: translateY(1px); }
+  .bar-btn[aria-pressed="true"] { background: rgba(56,189,248,0.18); border-color: var(--accent); }
+  kbd {
+    font-size: 10px;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 5px;
+    color: var(--muted);
+  }
+  #main { flex: 1; min-height: 0; display: flex; }
+  #stage { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  #viewport { flex: 1; min-height: 0; position: relative; }
+  #art, #xray { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+  #xray { pointer-events: none; }
+  #viewport.preview #art { filter: blur(6px) saturate(1.05); }
+  #hud { position: absolute; inset: 0; pointer-events: none; }
+  #caption, #pathline, #empirChip, #presentStats {
+    position: absolute;
+    background: rgba(7,10,18,0.55);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  #caption {
+    top: 14px; left: 50%; transform: translateX(-50%);
+    max-width: min(640px, calc(100% - 32px));
+    text-align: center;
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  #pathline {
+    top: 14px; left: 14px;
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    max-width: 28%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #empirChip {
+    left: 14px; top: 58px;
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-size: 12px;
+    line-height: 1.55;
+    white-space: pre;
+  }
+  #presentStats {
+    display: none;
+    bottom: 16px; left: 50%; transform: translateX(-50%);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+  }
+  body.present #presentStats { display: block; }
+  body.present #side { display: none; }
+  body.present #caption { font-size: 22px; padding: 10px 18px; }
+  body.present #presentStats { font-size: 28px; padding: 12px 22px; }
+  body.present #empirChip { font-size: 18px; }
+  body.present #pathline { font-size: 18px; }
+  #charts {
+    height: 156px;
+    flex: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 12px 12px;
+  }
+  .chart {
+    min-width: 0;
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .chart.hot { border-color: rgba(56,189,248,0.55); box-shadow: 0 0 0 1px rgba(56,189,248,0.25); }
+  .chart-h { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; font-size: 12px; color: var(--muted); }
+  .chart-h .num { color: var(--text); font-size: 11px; }
+  .chart canvas { width: 100%; height: 78px; display: block; }
+  .krow { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+  #side {
+    width: var(--side);
+    flex: none;
+    overflow: auto;
+    border-left: 1px solid var(--line);
+    background: rgba(7,10,18,0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 12px;
+  }
+  #side::-webkit-scrollbar { width: 8px; }
+  #side::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 99px; }
+  .panel {
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+  }
+  .ph {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 11px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .chev { color: var(--muted); transition: transform .2s ease; }
+  .panel[data-open="false"] .chev { transform: rotate(-90deg); }
+  .panel[data-open="false"] .pb { display: none; }
+  .pb { padding: 0 12px 12px; }
+  .scenario {
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    margin-bottom: 2px;
+    font-size: 13px;
+    font-weight: 550;
+  }
+  .scenario.on { border-color: rgba(56,189,248,0.5); background: rgba(56,189,248,0.12); }
+  .slider { margin: 8px 0 12px; }
+  .slider-top, .switch-row, .layer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .slider-top label, .hint, .layer .name { font-size: 13px; }
+  .slider-top .num { font-size: 13px; color: var(--accent); }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 18px;
+    background: transparent;
+    margin: 6px 0 0;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(56,189,248,0.9), rgba(167,139,250,0.95));
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    margin-top: -6px;
+    border-radius: 50%;
+    background: #F8FBFF;
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 0 4px rgba(56,189,248,0.15);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 4px; border: none; border-radius: 999px;
+    background: linear-gradient(90deg, rgba(56,189,248,0.9), rgba(167,139,250,0.95));
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #F8FBFF; border: 2px solid var(--accent);
+  }
+  .seg { display: flex; gap: 6px; }
+  .seg button {
+    flex: 1; height: 34px; border-radius: 10px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.03);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+  }
+  .seg button:hover { border-color: rgba(56,189,248,0.6); background: rgba(56,189,248,0.12); }
+  .queue { margin-top: 8px; color: var(--muted); font-size: 12px; }
+  .btn {
+    width: 100%;
+    margin-top: 8px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.04);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .switch-row { margin: 4px 0 8px; font-size: 13px; }
+  .switch {
+    width: 40px; height: 22px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.06);
+    position: relative; padding: 0; flex: none;
+  }
+  .switch::after {
+    content: "";
+    position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #E8EDF6;
+    transition: transform .2s ease;
+  }
+  .switch[aria-checked="true"] { background: rgba(56,189,248,0.38); border-color: var(--accent); }
+  .switch[aria-checked="true"]::after { transform: translateX(18px); }
+  .switch:disabled { opacity: 0.7; cursor: default; }
+  .layer { padding: 5px 0; }
+  .layer .name { flex: 1; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stats div {
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    padding: 7px 8px;
+  }
+  .stats .wide { grid-column: 1 / -1; }
+  .stats dt { color: var(--muted); font-size: 11px; }
+  .stats dd { margin: 2px 0 0; font-size: 16px; }
+  .note { color: var(--muted); font-size: 12px; line-height: 1.4; margin: 8px 0 0; }
+  .pb h3 { margin: 10px 0 4px; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+  .pb p, .pb li { font-size: 13px; line-height: 1.45; color: #C5CEDD; margin: 0 0 6px; }
+  .pb ol { margin: 0; padding-left: 18px; }
+  .formula {
+    font-size: 12px;
+    line-height: 1.55;
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: var(--text);
+  }
+  .hood { list-style: none; margin: 0; padding: 0; }
+  .hood li { margin: 0 0 8px; }
+  .hood b { color: var(--text); font-weight: 600; }
+  #intro, #help {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    z-index: 6;
+    background: rgba(7,10,18,0.28);
+    padding: 18px;
+  }
+  #intro[hidden], #help[hidden] { display: none !important; }
+  .modal {
+    width: min(460px, 100%);
+    background: rgba(12,16,28,0.82);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 22px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+  }
+  .modal h2 { margin: 0 0 8px; font-size: 28px; letter-spacing: -0.03em; }
+  .modal .lede { margin: 0 0 12px; color: #C5CEDD; line-height: 1.45; }
+  .modal ul, .modal .keys { margin: 0 0 14px; padding-left: 18px; color: #C5CEDD; }
+  .modal li { margin: 4px 0; line-height: 1.4; }
+  .primary {
+    height: 40px; padding: 0 18px; border: 0; border-radius: 999px;
+    background: linear-gradient(100deg, #38BDF8, #A78BFA);
+    color: #070A12; font-weight: 700; font-size: 14px;
+  }
+  .primary:hover { filter: brightness(1.06); }
+  .keys { list-style: none; padding: 0; }
+  .keys li { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+  #boot {
+    position: absolute; inset: 0; display: grid; place-items: center; z-index: 7; padding: 24px; text-align: center;
+  }
+  #boot[hidden] { display: none !important; }
+  .scrim { display: none; }
+  @media (max-width: 980px) {
+    #side {
+      position: fixed; top: var(--bar); right: 0; bottom: 0; z-index: 20;
+      transform: translateX(104%);
+      transition: transform .22s ease;
+      box-shadow: -24px 0 60px rgba(0,0,0,0.45);
+    }
+    body.side-open #side { transform: none; }
+    body.side-open .scrim { display: block; position: fixed; inset: var(--bar) 0 0 0; z-index: 19; background: rgba(0,0,0,0.35); }
+    #charts { height: 132px; }
+    .lab-name { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bar-btn, .btn, .scenario, .seg button, .switch, .switch::after, #side { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <a class="back" href="../">← Amplitude Labs</a>
+    <div class="lab-name">Galton Lab</div>
+    <span class="pill">Statistics</span>
+    <span class="spacer"></span>
+    <button class="bar-btn" id="layersBtn" type="button" aria-label="Show layers">Layers</button>
+    <button class="bar-btn" id="presentBtn" type="button" aria-pressed="false" aria-label="Present mode">Present <kbd>P</kbd></button>
+    <button class="bar-btn" id="helpBtn" type="button" aria-label="Help">Help <kbd>?</kbd></button>
+  </header>
+  <div id="main">
+    <div id="stage">
+      <div id="viewport" class="preview">
+        <canvas id="art" aria-label="Galton board. Each falling ball is a coin flip at every peg, and the bins form a histogram."></canvas>
+        <canvas id="xray" aria-hidden="true"></canvas>
+        <div id="hud">
+          <div id="caption">Fair coins, 12 rows. Sketch the shape, then drop a thousand balls.</div>
+          <div id="pathline" hidden></div>
+          <div id="empirChip" hidden></div>
+          <div id="presentStats">Drop balls to begin</div>
+        </div>
+        <div id="intro">
+          <div class="modal">
+            <div class="pill">Statistics</div>
+            <h2>Galton Lab</h2>
+            <p class="lede">Every falling ball is a coin flip. The bins pile up into the binomial distribution, and a bell curve appears on top.</p>
+            <ul>
+              <li>Drop 1,000 balls at p = 0.5 and watch a bell curve grow in the bins.</li>
+              <li>Drag p down to 0.25 and see the stack lean left.</li>
+              <li>Turn on the normal curve and the 68–95–99.7 bands.</li>
+            </ul>
+            <button class="primary" id="startBtn" type="button">Start</button>
+          </div>
+        </div>
+        <div id="help" hidden>
+          <div class="modal">
+            <h2>Shortcuts</h2>
+            <p class="lede">The same keys work in Present mode. Drag any falling ball — the pointer is mapped through the letterbox, including the corners.</p>
+            <ul class="keys">
+              <li><span>Present mode</span><kbd>P</kbd></li>
+              <li><span>Help</span><kbd>?</kbd></li>
+              <li><span>Histogram</span><kbd>H</kbd></li>
+              <li><span>Binomial dots</span><kbd>B</kbd></li>
+              <li><span>Normal curve</span><kbd>N</kbd></li>
+              <li><span>Empirical rule</span><kbd>E</kbd></li>
+              <li><span>Pascal’s triangle</span><kbd>⇧P</kbd></li>
+              <li><span>X-ray</span><kbd>X</kbd></li>
+              <li><span>Drop 1 / 10 / 100 / 1000</span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></li>
+              <li><span>Reset</span><kbd>R</kbd></li>
+              <li><span>Close help or leave Present</span><kbd>Esc</kbd></li>
+            </ul>
+            <button class="primary" id="helpClose" type="button">Close</button>
+          </div>
+        </div>
+        <div id="boot" hidden>
+          <div class="modal">
+            <h2>Matter.js didn’t load</h2>
+            <p class="lede">Galton Lab needs a network connection for Matter.js and the fonts. Reload when you’re online. Double-clicking the file works the same way once those two requests succeed.</p>
+          </div>
+        </div>
+      </div>
+      <div id="charts">
+        <section class="chart" id="chart-lln">
+          <div class="chart-h"><span>Law of large numbers</span><span class="num" id="llnRead">mean → np</span></div>
+          <canvas id="lln" aria-label="Running mean of the balls compared with np"></canvas>
+        </section>
+        <section class="chart" id="chart-samp">
+          <div class="chart-h"><span>Sampling distribution</span><span class="num" id="sampRead">σ/√k</span></div>
+          <canvas id="samp" aria-label="Distribution of sample means"></canvas>
+          <div class="krow">
+            <span>Sample size k</span>
+            <span class="num" id="kOut">10</span>
+          </div>
+          <input id="kSlider" type="range" min="1" max="30" step="1" value="10" aria-label="Sample size k">
+        </section>
+      </div>
+    </div>
+    <aside id="side">
+      <section class="panel" data-open="true" id="sec-scenarios">
+        <button class="ph" type="button" aria-expanded="true">Scenarios <span class="chev">▾</span></button>
+        <div class="pb" id="scenarioList">
+          <button class="scenario" type="button" data-scenario="bell">Bell curve</button>
+          <button class="scenario" type="button" data-scenario="skew">Skew it</button>
+          <button class="scenario" type="button" data-scenario="rows">Few vs many rows</button>
+          <button class="scenario" type="button" data-scenario="empir">Empirical rule</button>
+          <button class="scenario" type="button" data-scenario="lln">Law of large numbers</button>
+          <button class="scenario" type="button" data-scenario="samp">Sampling distribution</button>
+          <button class="scenario" type="button" data-scenario="pure">Pure physics vs the model</button>
+        </div>
+      </section>
+      <section class="panel" data-open="true" id="sec-controls">
+        <button class="ph" type="button" aria-expanded="true">Controls <span class="chev">▾</span></button>
+        <div class="pb">
+          <div class="slider">
+            <div class="slider-top"><label for="rowsSlider">Rows</label><span class="num" id="rowsOut">12</span></div>
+            <input id="rowsSlider" type="range" min="4" max="16" step="1" value="12" aria-label="Number of peg rows">
+          </div>
+          <div class="slider">
+            <div class="slider-top"><label for="pSlider">Probability p of a right turn</label><span class="num" id="pOut">0.50</span></div>
+            <input id="pSlider" type="range" min="0" max="1" step="0.01" value="0.50" aria-label="Probability p of a right turn">
+          </div>
+          <div class="slider">
+            <div class="slider-top"><label for="tiltSlider">Tilt</label><span class="num" id="tiltOut">0.00</span></div>
+            <input id="tiltSlider" type="range" min="-1" max="1" step="0.01" value="0" aria-label="Gravity tilt, used in pure physics">
+          </div>
+          <div class="slider">
+            <div class="slider-top"><label for="rateSlider">Drop rate</label><span class="num" id="rateOut">30</span></div>
+            <input id="rateSlider" type="range" min="5" max="60" step="1" value="30" aria-label="Balls released per second">
+          </div>
+          <div class="slider">
+            <div class="slider-top"><label for="speedSlider">Physics speed</label><span class="num" id="speedOut">1×</span></div>
+            <input id="speedSlider" type="range" min="1" max="4" step="1" value="1" aria-label="Physics substeps per frame">
+          </div>
+          <div class="switch-row">
+            <span>Pure physics — no nudge</span>
+            <button class="switch" id="pureSwitch" type="button" role="switch" aria-checked="false" aria-label="Pure physics, turn the coin-flip nudge off"></button>
+          </div>
+          <div class="seg" role="group" aria-label="Drop balls">
+            <button type="button" data-drop="1" aria-label="Drop 1 ball">1</button>
+            <button type="button" data-drop="10" aria-label="Drop 10 balls">10</button>
+            <button type="button" data-drop="100" aria-label="Drop 100 balls">100</button>
+            <button type="button" data-drop="1000" aria-label="Drop 1000 balls">1000</button>
+          </div>
+          <div class="queue num" id="queueLabel">Queue empty</div>
+          <button class="btn" id="resetBtn" type="button" aria-label="Reset the board and the data">Reset</button>
+        </div>
+      </section>
+      <section class="panel" data-open="true" id="sec-layers">
+        <button class="ph" type="button" aria-expanded="true">Layers <span class="chev">▾</span></button>
+        <div class="pb" id="layerList">
+          <div class="layer"><span class="name">Board</span><span class="hint">always</span><button class="switch" type="button" role="switch" aria-checked="true" aria-disabled="true" disabled aria-label="Board layer, always on"></button></div>
+          <div class="layer"><span class="name">Histogram</span><kbd>H</kbd><button class="switch" type="button" role="switch" data-layer="hist" aria-checked="true" aria-label="Toggle histogram"></button></div>
+          <div class="layer"><span class="name">Binomial</span><kbd>B</kbd><button class="switch" type="button" role="switch" data-layer="binom" aria-checked="false" aria-label="Toggle binomial expected counts"></button></div>
+          <div class="layer"><span class="name">Normal curve</span><kbd>N</kbd><button class="switch" type="button" role="switch" data-layer="normal" aria-checked="false" aria-label="Toggle normal curve"></button></div>
+          <div class="layer"><span class="name">Empirical rule</span><kbd>E</kbd><button class="switch" type="button" role="switch" data-layer="empir" aria-checked="false" aria-label="Toggle empirical rule bands"></button></div>
+          <div class="layer"><span class="name">Pascal</span><kbd>⇧P</kbd><button class="switch" type="button" role="switch" data-layer="pascal" aria-checked="false" aria-label="Toggle Pascal triangle"></button></div>
+          <div class="layer"><span class="name">X-ray</span><kbd>X</kbd><button class="switch" type="button" role="switch" data-layer="xray" aria-checked="false" aria-label="Toggle Matter.js x-ray"></button></div>
+        </div>
+      </section>
+      <section class="panel" data-open="true" id="sec-live">
+        <button class="ph" type="button" aria-expanded="true">Live data <span class="chev">▾</span></button>
+        <div class="pb">
+          <dl class="stats">
+            <div><dt>N</dt><dd class="num" id="stN">0</dd></div>
+            <div><dt>In flight</dt><dd class="num" id="stFly">0</dd></div>
+            <div><dt>Mean</dt><dd class="num" id="stMean">—</dd></div>
+            <div><dt>SD</dt><dd class="num" id="stSd">—</dd></div>
+            <div><dt>Theoretical mean μ</dt><dd class="num" id="stMu">6.00</dd></div>
+            <div><dt>Theoretical SD σ</dt><dd class="num" id="stSigma">1.73</dd></div>
+            <div><dt>p̂</dt><dd class="num" id="stPhat">—</dd></div>
+            <div><dt>Skewness</dt><dd class="num" id="stSkew">—</dd></div>
+            <div class="wide"><dt>χ² goodness of fit</dt><dd class="num" id="stChi">—</dd></div>
+          </dl>
+          <p class="note" id="stNote">Drop balls to estimate the distribution.</p>
+          <button class="btn" id="copyBtn" type="button" aria-label="Copy bin counts as CSV">Copy counts as CSV</button>
+        </div>
+      </section>
+      <section class="panel" data-open="true" id="sec-lesson">
+        <button class="ph" type="button" aria-expanded="true">Lesson <span class="chev">▾</span></button>
+        <div class="pb">
+          <h3>Predict</h3>
+          <p>Before you drop 1,000 balls at p = 0.5, sketch the shape you expect. Mark the bin you think will be tallest.</p>
+          <h3>Observe</h3>
+          <p>Move p from 0.5 to 0.25 and drop again. What happens to the tallest bin, and which side grows the long tail?</p>
+          <h3>Explain</h3>
+          <p>Repeat with 4 rows, then 16, at the same p. Why does the taller board look more like a smooth normal curve?</p>
+          <h3>Formulas</h3>
+          <p class="formula">P(X = k) = C(n, k) p^k (1 − p)^(n − k)
+μ = np
+σ = √(np(1 − p))</p>
+          <p>n is the number of rows, k is the bin (right turns), and p is the probability of a right turn at each peg.</p>
+          <h3>Discuss</h3>
+          <ol>
+            <li>A classmate says the tall middle stack proves the next ball will land there. What do the stacks actually show?</li>
+            <li>You change p and keep the rows fixed. Which moves — the center, the spread, or both — and why does σ shrink as p moves away from 1/2?</li>
+            <li>Pure physics uses the same pegs with the nudge turned off. Why isn’t a bell curve guaranteed anymore?</li>
+          </ol>
+        </div>
+      </section>
+      <section class="panel" data-open="false" id="sec-hood">
+        <button class="ph" type="button" aria-expanded="false">Under the hood <span class="chev">▾</span></button>
+        <div class="pb">
+          <ul class="hood">
+            <li><b>Engine</b> — steps the world at a fixed 1/60 s, applies gravity, and runs sleeping.</li>
+            <li><b>Bodies</b> — builds the pegs, balls, funnel, bin dividers, and floor.</li>
+            <li><b>Body</b> — <span class="num">setVelocity</span> is the coin-flip nudge; <span class="num">setPosition</span> moves the drag anchor.</li>
+            <li><b>Composite</b> — holds the board and removes a ball once it has settled in a bin.</li>
+            <li><b>Events</b> — <span class="num">collisionStart</span> between a ball and a peg is one Bernoulli trial.</li>
+            <li><b>Constraint</b> — a spring from the pointer to the ball you drag.</li>
+            <li><b>Query</b> — <span class="num">Query.point</span> finds the body under the pointer.</li>
+            <li><b>Render</b> — the X-ray wireframe pass: velocity, collisions, angle marks, and sleeping.</li>
+            <li><b>Sleeping</b> — pure-physics balls that come to rest fall asleep, then get baked into the stack.</li>
+          </ul>
+          <p>Each peg row is forced to be exactly one decision: on contact the ball is sent one gap left or right, plus a small wobble. Active bodies stay under a couple of hundred; settled balls are drawn as a packed stack.</p>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // Every tunable number lives here. Distances are world pixels (1600×900).
+  // Velocities handed to Matter are pixels per 1/60 s step.
+  var CONFIG = {
+    worldW: 1600,
+    worldH: 900,
+    marginX: 70,
+    topY: 160,
+    pegZone: 560,
+    maxGapY: 72,
+    floorY: 860,
+    labelGap: 34,
+    pegRadius: 9,
+    ballRadius: 7,
+    dividerThick: 8,
+    gravityY: 1,
+    gravityScale: 0.001,
+    // ±px/frame. With the kinematic nudge this keeps each row to one hit.
+    // Acceptance, p=0.5, 12 rows, 2000 balls: mean within 0.3 of np, SD within 10% of sqrt(np(1-p)).
+    wobble: 0.45,
+    modelFrictionAir: 0,
+    modelRestitution: 0.02,
+    modelFriction: 0,
+    pureFrictionAir: 0.012,
+    pureRestitution: 0.55,
+    purePegRestitution: 0.62,
+    pureFriction: 0.02,
+    maxActive: 220,
+    defaultRate: 30,
+    defaultSpeed: 1,
+    defaultP: 0.5,
+    defaultRows: 12,
+    sampleReps: 360,
+    sparkCount: 7,
+    sparkCap: 90,
+    maxBallAge: 900,
+    tMin: 6,
+    tMax: 40,
+    targetSpeed: 5.2,
+    minVy: 1.4,
+    maxVy: 8,
+    maxSpeed: 14,
+    funnelAngle: 0.62,
+    funnelW: 240,
+    funnelH: 14,
+    funnelDx: 110,
+    funnelDy: 108,
+    spawnAbove: 55,
+    lockExtra: 0,
+    tubeInset: 0.16,
+    previewCap: 70
+  };
+
+  if (!window.Matter) {
+    document.getElementById('boot').hidden = false;
+    document.getElementById('intro').hidden = true;
+    return;
+  }
+
+  var Engine = Matter.Engine;
+  var Bodies = Matter.Bodies;
+  var Body = Matter.Body;
+  var Composite = Matter.Composite;
+  var Events = Matter.Events;
+  var Constraint = Matter.Constraint;
+  var Query = Matter.Query;
+  var Render = Matter.Render;
+  var Sleeping = Matter.Sleeping;
+
+  var DT = 1000 / 60;
+  var motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  var art = document.getElementById('art');
+  var xray = document.getElementById('xray');
+  var viewport = document.getElementById('viewport');
+  var captionEl = document.getElementById('caption');
+  var pathEl = document.getElementById('pathline');
+  var empirEl = document.getElementById('empirChip');
+  var presentEl = document.getElementById('presentStats');
+  var introEl = document.getElementById('intro');
+  var helpEl = document.getElementById('help');
+
+  var engine = Engine.create({ enableSleeping: true });
+  engine.gravity.y = CONFIG.gravityY;
+  engine.gravity.x = 0;
+  engine.gravity.scale = CONFIG.gravityScale;
+  engine.positionIterations = 8;
+  engine.velocityIterations = 6;
+
+  var state = {
+    rows: CONFIG.defaultRows,
+    p: CONFIG.defaultP,
+    tilt: 0,
+    pure: false,
+    rate: CONFIG.defaultRate,
+    speed: CONFIG.defaultSpeed,
+    sampleK: 10,
+    queue: 0,
+    spawnCool: 0,
+    layers: { hist: true, binom: false, normal: false, empir: false, pascal: false, xray: false },
+    present: false,
+    intro: true,
+    help: false,
+    reduced: motionQuery.matches,
+    applying: false,
+    scenarioId: 'bell',
+    rowsFlip: 0,
+    caption: 'Fair coins, 12 rows. Sketch the shape, then drop a thousand balls.',
+    outcomes: [],
+    counts: [],
+    previewCounts: [],
+    sum: 0,
+    lln: [],
+    misses: 0,
+    badPaths: 0,
+    balls: [],
+    sparks: [],
+    layout: null,
+    board: null,
+    mouse: null,
+    drag: null,
+    render: null,
+    xrayOn: false,
+    hero: null,
+    lastPath: '',
+    lastVisited: [],
+    sampleMeans: [],
+    sampleSd: 0,
+    samplesDirty: false,
+    domTick: 0,
+    paused: false
+  };
+
+  state.mouse = Bodies.circle(0, 0, 4, {
+    isStatic: true,
+    collisionFilter: { mask: 0 },
+    label: 'mouse',
+    render: { visible: false }
+  });
+  Composite.add(engine.world, state.mouse);
+
+  function accel(g) { return g * CONFIG.gravityScale * DT * DT; }
+
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  function binomCoef(n, k) {
+    if (k < 0 || k > n) return 0;
+    k = Math.min(k, n - k);
+    var c = 1;
+    for (var i = 0; i < k; i++) c = c * (n - i) / (i + 1);
+    return Math.round(c);
+  }
+
+  function binomPmf(n, k, p) {
+    if (k < 0 || k > n) return 0;
+    return binomCoef(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+  }
+
+  function logGamma(z) {
+    var p = [676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - logGamma(1 - z);
+    z -= 1;
+    var x = 0.99999999999980993;
+    for (var i = 0; i < p.length; i++) x += p[i] / (z + i + 1);
+    var t = z + p.length - 0.5;
+    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+  }
+
+  function gammaCF(s, x) {
+    var b = x + 1 - s, c = 1 / 1e-30, d = 1 / b, h = d;
+    for (var i = 1; i <= 200; i++) {
+      var an = -i * (i - s);
+      b += 2;
+      d = an * d + b;
+      if (Math.abs(d) < 1e-30) d = 1e-30;
+      c = b + an / c;
+      if (Math.abs(c) < 1e-30) c = 1e-30;
+      d = 1 / d;
+      var del = d * c;
+      h *= del;
+      if (Math.abs(del - 1) < 1e-12) break;
+    }
+    return Math.exp(-x + s * Math.log(x) - logGamma(s)) * h;
+  }
+
+  function chiPValue(chi, df) {
+    if (!(chi >= 0) || !(df > 0)) return 1;
+    var s = df / 2, x = chi / 2;
+    var q;
+    if (x === 0) return 1;
+    if (x < s + 1) {
+      var term = 1 / s, sum = term;
+      for (var n = 1; n < 300; n++) {
+        term *= x / (s + n);
+        sum += term;
+        if (term < 1e-14 * sum) break;
+      }
+      var lower = sum * Math.exp(-x + s * Math.log(x) - logGamma(s));
+      q = 1 - lower;
+    } else {
+      q = gammaCF(s, x);
+    }
+    if (!isFinite(q)) return 0;
+    return clamp(q, 0, 1);
+  }
+
+  function normalPdf(x, mu, sigma) {
+    if (sigma <= 1e-9) return (Math.abs(x - mu) < 1e-6 ? 1 : 0);
+    var z = (x - mu) / sigma;
+    return Math.exp(-0.5 * z * z) / (sigma * Math.sqrt(2 * Math.PI));
+  }
+
+  function makeLayout(rows) {
+    var cx = CONFIG.worldW / 2;
+    var gapX = (CONFIG.worldW - 2 * CONFIG.marginX) / rows;
+    var gapY = rows === 1 ? 60 : Math.min(CONFIG.maxGapY, CONFIG.pegZone / (rows - 1));
+    var pegs = [];
+    for (var r = 0; r < rows; r++) {
+      for (var i = 0; i <= r; i++) {
+        pegs.push({
+          row: r,
+          index: i,
+          x: cx + (i - r / 2) * gapX,
+          y: CONFIG.topY + r * gapY
+        });
+      }
+    }
+    var lastY = CONFIG.topY + (rows - 1) * gapY;
+    var wallTop = lastY + CONFIG.pegRadius + CONFIG.labelGap;
+    return { cx: cx, gapX: gapX, gapY: gapY, pegs: pegs, lastY: lastY, wallTop: wallTop, rows: rows };
+  }
+
+  function pegAt(row, index) {
+    var idx = row * (row + 1) / 2 + index;
+    return state.layout.pegs[idx];
+  }
+
+  function binX(k) {
+    var L = state.layout;
+    return L.cx + (k - state.rows / 2) * L.gapX;
+  }
+
+  function nearestBin(x) {
+    var L = state.layout;
+    var k = Math.round((x - L.cx) / L.gapX + state.rows / 2);
+    return clamp(k, 0, state.rows);
+  }
+
+  function chooseT(dx, dy, ax, ay) {
+    var best = null;
+    for (var T = CONFIG.tMin; T <= CONFIG.tMax; T++) {
+      var v0x = (dx - ax * T * (T + 1) / 2) / T;
+      var v0y = (dy - ay * T * (T + 1) / 2) / T;
+      if (v0y < CONFIG.minVy || v0y > CONFIG.maxVy) continue;
+      var speed = Math.hypot(v0x, v0y);
+      if (speed > CONFIG.maxSpeed) continue;
+      var score = Math.abs(speed - CONFIG.targetSpeed) + Math.abs(v0y - 3.2) * 0.3;
+      if (!best || score < best.score) best = { T: T, v0x: v0x, v0y: v0y, score: score };
+    }
+    if (!best) {
+      var Tf = 12;
+      return { T: Tf, v0x: dx / Tf, v0y: Math.max(1.5, (dy - ay * Tf * (Tf + 1) / 2) / Tf) };
+    }
+    return best;
+  }
+
+  function resetData() {
+    var n = state.rows + 1;
+    state.outcomes = [];
+    state.counts = [];
+    state.previewCounts = [];
+    for (var i = 0; i < n; i++) { state.counts.push(0); state.previewCounts.push(0); }
+    state.sum = 0;
+    state.lln = [];
+    state.misses = 0;
+    state.badPaths = 0;
+    state.queue = 0;
+    state.sampleMeans = [];
+    state.sampleSd = 0;
+    state.samplesDirty = false;
+    state.lastPath = '';
+    state.lastVisited = [];
+    state.hero = null;
+    state.sparks = [];
+  }
+
+  function clearBalls() {
+    for (var i = state.balls.length - 1; i >= 0; i--) {
+      var b = state.balls[i];
+      if (state.drag && state.drag.bodyB === b) releaseDrag();
+      Composite.remove(engine.world, b);
+    }
+    state.balls = [];
+    state.hero = null;
+  }
+
+  function rebuild() {
+    clearBalls();
+    if (state.board) {
+      Composite.remove(engine.world, state.board);
+      state.board = null;
+    }
+    resetData();
+    var rows = state.rows;
+    var L = makeLayout(rows);
+    state.layout = L;
+    var board = Composite.create({ label: 'board' });
+    var pure = state.pure;
+    L.pegs.forEach(function (p) {
+      var b = Bodies.circle(p.x, p.y, CONFIG.pegRadius, {
+        isStatic: true,
+        isSensor: !pure,
+        restitution: pure ? CONFIG.purePegRestitution : 0,
+        friction: 0,
+        label: 'peg',
+        render: { strokeStyle: '#7DD3FC', fillStyle: 'transparent' }
+      });
+      b.galton = { row: p.row, index: p.index, pulse: 0 };
+      Composite.add(board, b);
+    });
+    var wallTop = L.wallTop;
+    var floorY = CONFIG.floorY;
+    for (var k = 0; k <= rows + 1; k++) {
+      var x = L.cx + (k - 0.5 - rows / 2) * L.gapX;
+      var h = floorY - wallTop;
+      var wall = Bodies.rectangle(x, (wallTop + floorY) / 2, CONFIG.dividerThick, h, {
+        isStatic: true,
+        isSensor: !pure,
+        restitution: 0.02,
+        friction: 0,
+        label: 'divider',
+        render: { strokeStyle: '#94A3B8', fillStyle: 'transparent' }
+      });
+      Composite.add(board, wall);
+    }
+    var floor = Bodies.rectangle(L.cx, floorY + 18, L.gapX * (rows + 3), 36, {
+      isStatic: true,
+      isSensor: !pure,
+      restitution: 0.05,
+      friction: 0.04,
+      label: 'floor',
+      render: { strokeStyle: '#94A3B8', fillStyle: 'transparent' }
+    });
+    Composite.add(board, floor);
+    var funnelA = Bodies.rectangle(L.cx - CONFIG.funnelDx, CONFIG.topY - CONFIG.funnelDy, CONFIG.funnelW, CONFIG.funnelH, {
+      isStatic: true, angle: CONFIG.funnelAngle, restitution: 0.05, friction: 0, label: 'funnel',
+      render: { strokeStyle: '#7DD3FC', fillStyle: 'transparent' }
+    });
+    var funnelB = Bodies.rectangle(L.cx + CONFIG.funnelDx, CONFIG.topY - CONFIG.funnelDy, CONFIG.funnelW, CONFIG.funnelH, {
+      isStatic: true, angle: -CONFIG.funnelAngle, restitution: 0.05, friction: 0, label: 'funnel',
+      render: { strokeStyle: '#7DD3FC', fillStyle: 'transparent' }
+    });
+    Composite.add(board, [funnelA, funnelB]);
+    var sideH = CONFIG.worldH + 80;
+    Composite.add(board, [
+      Bodies.rectangle(-30, CONFIG.worldH / 2, 40, sideH, { isStatic: true, label: 'side', render: { visible: false } }),
+      Bodies.rectangle(CONFIG.worldW + 30, CONFIG.worldH / 2, 40, sideH, { isStatic: true, label: 'side', render: { visible: false } }),
+      Bodies.rectangle(L.cx, -30, CONFIG.worldW, 40, { isStatic: true, label: 'ceiling', render: { visible: false } })
+    ]);
+    Composite.add(engine.world, board);
+    state.board = board;
+    engine.gravity.x = pure ? state.tilt : 0;
+    engine.gravity.y = CONFIG.gravityY;
+  }
+
+  function nudge(ball, peg) {
+    if (state.pure) return;
+    var g = ball.galton;
+    if (!peg || peg.row !== g.decided + 1) return;
+    var goRight = Math.random() < state.p;
+    g.path += goRight ? 'R' : 'L';
+    if (goRight) g.rights += 1;
+    g.decided = peg.row;
+    g.visited.push({ row: peg.row, index: peg.index });
+    var tx, ty;
+    if (peg.row < state.rows - 1) {
+      var next = pegAt(peg.row + 1, peg.index + (goRight ? 1 : 0));
+      tx = next.x;
+      ty = next.y;
+    } else {
+      tx = binX(g.rights);
+      ty = state.layout.lastY + Math.min(state.layout.gapY * 0.95, 70);
+    }
+    var dx = tx - ball.position.x;
+    var dy = ty - ball.position.y;
+    var ax = accel(engine.gravity.x);
+    var ay = accel(engine.gravity.y);
+    var ch = chooseT(dx, dy, ax, ay);
+    var j = (Math.random() - 0.5) * 2 * CONFIG.wobble;
+    Body.setVelocity(ball, { x: ch.v0x + j, y: ch.v0y });
+    Body.setAngularVelocity(ball, (Math.random() - 0.5) * 0.08);
+    if (peg.pulse !== undefined) peg.pulse = 1;
+    burst(ball.position.x, ball.position.y, '#7DD3FC');
+  }
+
+  Events.on(engine, 'collisionStart', function (ev) {
+    for (var i = 0; i < ev.pairs.length; i++) {
+      var pair = ev.pairs[i];
+      var A = pair.bodyA, B = pair.bodyB;
+      var ball = A.label === 'ball' ? A : B.label === 'ball' ? B : null;
+      var pegBody = A.label === 'peg' ? A : B.label === 'peg' ? B : null;
+      if (!ball || !pegBody || ball.galton.dead) continue;
+      nudge(ball, pegBody.galton);
+    }
+  });
+
+  function spawn() {
+    var L = state.layout;
+    var ball = Bodies.circle(L.cx + (Math.random() - 0.5) * 1.5, CONFIG.topY - CONFIG.spawnAbove, CONFIG.ballRadius, {
+      restitution: state.pure ? CONFIG.pureRestitution : CONFIG.modelRestitution,
+      friction: state.pure ? CONFIG.pureFriction : CONFIG.modelFriction,
+      frictionAir: state.pure ? CONFIG.pureFrictionAir : CONFIG.modelFrictionAir,
+      density: 0.002,
+      label: 'ball',
+      sleepThreshold: state.pure ? 40 : 180,
+      collisionFilter: { category: 0x0002, mask: 0x0001 },
+      render: { strokeStyle: '#F8FAFC', fillStyle: 'transparent' }
+    });
+    ball.galton = { path: '', rights: 0, decided: -1, visited: [], age: 0, dead: false, lockedBin: null };
+    Sleeping.set(ball, false);
+    Composite.add(engine.world, ball);
+    Body.setVelocity(ball, { x: state.pure ? (Math.random() - 0.5) * 1.2 : 0, y: 1.5 });
+    state.balls.push(ball);
+    if (!state.hero) state.hero = ball;
+  }
+
+  function stackTopY(k) {
+    var L = state.layout;
+    var counts = activeCounts();
+    var maxC = 1;
+    for (var i = 0; i < counts.length; i++) if (counts[i] > maxC) maxC = counts[i];
+    var top = L.wallTop + 8;
+    var bot = CONFIG.floorY - CONFIG.ballRadius - 4;
+    var avail = Math.max(8, bot - top);
+    var n = counts[k] || 0;
+    var h = (n / Math.max(maxC, n + 1)) * avail;
+    return bot - h;
+  }
+
+  function bake(ball, k) {
+    var g = ball.galton;
+    if (g.dead) return;
+    g.dead = true;
+    if (state.drag && state.drag.bodyB === ball) releaseDrag();
+    Composite.remove(engine.world, ball);
+    var idx = state.balls.indexOf(ball);
+    if (idx >= 0) state.balls.splice(idx, 1);
+    state.lastPath = g.path;
+    state.lastVisited = g.visited.slice();
+    if (state.hero === ball) state.hero = null;
+    k = clamp(k, 0, state.rows);
+    if (state.intro) {
+      state.previewCounts[k] += 1;
+      return;
+    }
+    if (!state.pure && g.path.length !== state.rows) state.badPaths += 1;
+    state.counts[k] += 1;
+    state.outcomes.push(k);
+    state.sum += k;
+    state.lln.push({ n: state.outcomes.length, mean: state.sum / state.outcomes.length });
+    if (state.lln.length > 900) {
+      var step = Math.ceil(state.lln.length / 500);
+      var next = [];
+      for (var i = 0; i < state.lln.length; i += step) next.push(state.lln[i]);
+      next.push(state.lln[state.lln.length - 1]);
+      state.lln = next;
+    }
+    state.samplesDirty = true;
+  }
+
+  function afterBall(ball) {
+    var g = ball.galton;
+    if (g.dead) return;
+    g.age += 1;
+    if (!state.pure) {
+      var nextRow = g.decided + 1;
+      if (nextRow < state.rows) {
+        var peg = pegAt(nextRow, g.rights);
+        if (peg && ball.position.y > peg.y + CONFIG.pegRadius + CONFIG.ballRadius * 0.25) {
+          state.misses += 1;
+          var body = pegBodyAt(nextRow, g.rights);
+          nudge(ball, body ? body.galton : peg);
+        }
+      }
+      if (g.decided === state.rows - 1 && g.lockedBin === null && ball.position.y > state.layout.lastY + CONFIG.pegRadius + CONFIG.ballRadius) {
+        g.lockedBin = nearestBin(ball.position.x);
+        Body.setPosition(ball, { x: binX(g.lockedBin), y: ball.position.y });
+        Body.setVelocity(ball, { x: 0, y: Math.max(2.2, ball.velocity.y) });
+      }
+      if (g.lockedBin !== null && (ball.position.y >= stackTopY(g.lockedBin) || ball.isSleeping)) {
+        bake(ball, g.lockedBin);
+        return;
+      }
+    } else if (ball.isSleeping || (ball.position.y > CONFIG.floorY - 28 && ball.speed < 1.15) || g.age > CONFIG.maxBallAge) {
+      bake(ball, nearestBin(ball.position.x));
+      return;
+    }
+    if (!g.dead && g.age > CONFIG.maxBallAge) {
+      bake(ball, g.lockedBin !== null ? g.lockedBin : nearestBin(ball.position.x));
+    }
+  }
+
+  function pegBodyAt(row, index) {
+    if (!state.board) return null;
+    var bodies = state.board.bodies;
+    for (var i = 0; i < bodies.length; i++) {
+      var b = bodies[i];
+      if (b.label === 'peg' && b.galton.row === row && b.galton.index === index) return b;
+    }
+    return null;
+  }
+
+  function framesBetween() {
+    return Math.max(1, Math.round(60 / Math.max(1, state.rate)));
+  }
+
+  function physicsStep() {
+    Engine.update(engine, DT);
+    var list = state.balls.slice();
+    for (var i = 0; i < list.length; i++) afterBall(list[i]);
+    state.spawnCool -= 1;
+    if (state.queue > 0 && state.balls.length < CONFIG.maxActive && state.spawnCool <= 0) {
+      spawn();
+      state.queue -= 1;
+      state.spawnCool = framesBetween();
+    }
+    if (state.intro && !state.reduced && state.queue === 0 && state.balls.length < 18) {
+      var shown = 0;
+      for (var c = 0; c < state.previewCounts.length; c++) shown += state.previewCounts[c];
+      if (shown < CONFIG.previewCap) state.queue = 1;
+    }
+  }
+
+  function burst(x, y, color) {
+    var n = state.reduced ? 0 : CONFIG.sparkCount;
+    for (var i = 0; i < n; i++) {
+      var a = Math.random() * Math.PI * 2;
+      var s = 0.4 + Math.random() * 1.6;
+      state.sparks.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color: color });
+    }
+    if (state.sparks.length > CONFIG.sparkCap) state.sparks.splice(0, state.sparks.length - CONFIG.sparkCap);
+  }
+
+  function activeCounts() {
+    return state.intro ? state.previewCounts : state.counts;
+  }
+
+  function colorOf(k) {
+    var t = state.rows === 0 ? 0.5 : k / state.rows;
+    var r = Math.round(0xA7 + (0x38 - 0xA7) * t);
+    var g = Math.round(0x8B + (0xBD - 0x8B) * t);
+    var b = Math.round(0xFA + (0xF8 - 0xFA) * t);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawBead(ctx, x, y, r, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.arc(x - r * 0.32, y - r * 0.34, Math.max(0.8, r * 0.28), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function viewOf() {
+    var rect = art.getBoundingClientRect();
+    var scale = Math.min(rect.width / CONFIG.worldW, rect.height / CONFIG.worldH) || 1;
+    return {
+      rect: rect,
+      scale: scale,
+      ox: (rect.width - CONFIG.worldW * scale) / 2,
+      oy: (rect.height - CONFIG.worldH * scale) / 2,
+      dpr: window.devicePixelRatio || 1
+    };
+  }
+
+  function screenToWorld(clientX, clientY) {
+    var v = viewOf();
+    return {
+      x: (clientX - v.rect.left - v.ox) / v.scale,
+      y: (clientY - v.rect.top - v.oy) / v.scale
+    };
+  }
+
+  function draw() {
+    var v = viewOf();
+    var dpr = v.dpr;
+    var bw = Math.max(1, Math.round(v.rect.width * dpr));
+    var bh = Math.max(1, Math.round(v.rect.height * dpr));
+    if (art.width !== bw || art.height !== bh) { art.width = bw; art.height = bh; }
+    var ctx = art.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, v.rect.width, v.rect.height);
+    ctx.setTransform(dpr * v.scale, 0, 0, dpr * v.scale, dpr * v.ox, dpr * v.oy);
+
+    var L = state.layout;
+    if (!L) return;
+    var rows = state.rows;
+    var counts = activeCounts();
+    var N = 0;
+    for (var ci = 0; ci < counts.length; ci++) N += counts[ci];
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+    ctx.lineWidth = 1;
+    for (var gx = 0; gx <= CONFIG.worldW; gx += 40) {
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, CONFIG.worldH); ctx.stroke();
+    }
+    for (var gy = 0; gy <= CONFIG.worldH; gy += 40) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(CONFIG.worldW, gy); ctx.stroke();
+    }
+    ctx.restore();
+
+    var glow = ctx.createRadialGradient(L.cx, CONFIG.topY - 40, 20, L.cx, 380, 620);
+    glow.addColorStop(0, 'rgba(56,189,248,0.10)');
+    glow.addColorStop(0.5, 'rgba(167,139,250,0.05)');
+    glow.addColorStop(1, 'rgba(7,10,18,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, CONFIG.worldW, CONFIG.worldH);
+
+    var boardLeft = binX(0) - L.gapX * 0.55;
+    var boardRight = binX(rows) + L.gapX * 0.55;
+    var glass = ctx.createLinearGradient(0, CONFIG.topY - 40, 0, L.lastY + 40);
+    glass.addColorStop(0, 'rgba(56,189,248,0.07)');
+    glass.addColorStop(1, 'rgba(167,139,250,0.05)');
+    roundRect(ctx, boardLeft, CONFIG.topY - 48, boardRight - boardLeft, (L.lastY - CONFIG.topY) + 96, 28);
+    ctx.fillStyle = glass;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    if (state.board) {
+      ctx.save();
+      ctx.lineWidth = 8;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(125,211,252,0.45)';
+      state.board.bodies.forEach(function (b) {
+        if (b.label !== 'funnel') return;
+        var verts = b.vertices;
+        var a = verts[0], c = verts[2];
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(c.x, c.y);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    var model = modelP();
+    var mu = rows * model;
+    var sigma = Math.sqrt(Math.max(0, rows * model * (1 - model)));
+
+    var maxC = 1;
+    for (var bi = 0; bi <= rows; bi++) {
+      maxC = Math.max(maxC, counts[bi] || 0);
+      if (N > 0) maxC = Math.max(maxC, N * binomPmf(rows, bi, model));
+    }
+    if (N > 0 && sigma > 0) maxC = Math.max(maxC, N * normalPdf(mu, mu, sigma));
+    var top = L.wallTop + 8;
+    var bot = CONFIG.floorY - 6;
+    var avail = bot - top;
+    var px = avail / maxC;
+
+    if (state.layers.empir && sigma > 0) {
+      for (var band = 3; band >= 1; band--) {
+        var x0 = xOfK(mu - band * sigma);
+        var x1 = xOfK(mu + band * sigma);
+        ctx.fillStyle = band === 1 ? 'rgba(56,189,248,0.16)' : band === 2 ? 'rgba(56,189,248,0.09)' : 'rgba(167,139,250,0.07)';
+        ctx.fillRect(x0, L.wallTop, x1 - x0, CONFIG.floorY - L.wallTop);
+      }
+    }
+
+    for (var bin = 0; bin <= rows; bin++) {
+      var cx = binX(bin);
+      var tw = L.gapX * (1 - CONFIG.tubeInset);
+      roundRect(ctx, cx - tw / 2, L.wallTop, tw, CONFIG.floorY - L.wallTop, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.045)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      var nbin = counts[bin] || 0;
+      if (nbin > 0) {
+        var h = (nbin / maxC) * (avail - 8);
+        var r = Math.min(CONFIG.ballRadius, L.gapX * 0.28, Math.max(1.5, h / 2));
+        var dots = Math.max(1, Math.min(nbin, Math.round(h / Math.max(2, r * 1.55))));
+        var col = colorOf(bin);
+        for (var d = 0; d < dots; d++) {
+          var y = bot - r - 2 - (dots === 1 ? 0 : d * (h - 2 * r) / (dots - 1));
+          drawBead(ctx, cx, y, r, col);
+        }
+      }
+    }
+
+    if (state.layers.normal && N > 1 && sigma > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(binX(-0.4), L.wallTop, binX(rows + 0.4) - binX(-0.4), CONFIG.floorY - L.wallTop);
+      ctx.clip();
+      ctx.beginPath();
+      var steps = 80;
+      for (var s = 0; s <= steps; s++) {
+        var kk = -0.3 + (rows + 0.6) * s / steps;
+        var yy = bot - N * normalPdf(kk, mu, sigma) * px;
+        var xx = xOfK(kk);
+        if (s === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+      }
+      ctx.strokeStyle = '#7DD3FC';
+      ctx.lineWidth = 2.4;
+      ctx.shadowColor = '#38BDF8';
+      ctx.shadowBlur = state.reduced ? 0 : 14;
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 1.2;
+      for (var m = -3; m <= 3; m++) {
+        if (m === 0) continue;
+        var mx = xOfK(mu + m * sigma);
+        ctx.strokeStyle = 'rgba(232,237,246,0.35)';
+        ctx.beginPath();
+        ctx.moveTo(mx, L.wallTop);
+        ctx.lineTo(mx, CONFIG.floorY);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#A78BFA';
+      ctx.beginPath();
+      ctx.moveTo(xOfK(mu), L.wallTop);
+      ctx.lineTo(xOfK(mu), CONFIG.floorY);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (state.layers.binom && N > 0) {
+      for (var bk = 0; bk <= rows; bk++) {
+        var ev = N * binomPmf(rows, bk, model);
+        var by = bot - ev * px;
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(196,181,253,0.35)';
+        ctx.arc(binX(bk), by, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = '#E9D5FF';
+        ctx.arc(binX(bk), by, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    var visit = visitToShow();
+    var visitKey = {};
+    for (var vi = 0; vi < visit.length; vi++) visitKey[visit[vi].row + ':' + visit[vi].index] = true;
+
+    if (state.board) {
+      state.board.bodies.forEach(function (b) {
+        if (b.label !== 'peg') return;
+        var pulse = b.galton.pulse || 0;
+        if (pulse > 0.01) b.galton.pulse = pulse * 0.9;
+        var pr = CONFIG.pegRadius;
+        if (pulse > 0.04) {
+          ctx.fillStyle = 'rgba(186,230,253,' + (0.28 * pulse) + ')';
+          ctx.beginPath();
+          ctx.arc(b.position.x, b.position.y, pr * (1.7 + pulse * 1.4), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        var pegGrad = ctx.createRadialGradient(b.position.x - 2, b.position.y - 2, 1, b.position.x, b.position.y, pr);
+        pegGrad.addColorStop(0, '#F8FDFF');
+        pegGrad.addColorStop(0.55, '#7DD3FC');
+        pegGrad.addColorStop(1, '#0369A1');
+        ctx.fillStyle = pegGrad;
+        ctx.beginPath();
+        ctx.arc(b.position.x, b.position.y, pr, 0, Math.PI * 2);
+        ctx.fill();
+        if (state.layers.pascal && visitKey[b.galton.row + ':' + b.galton.index]) {
+          ctx.strokeStyle = '#C4B5FD';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(b.position.x, b.position.y, pr + 4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        if (state.layers.pascal) {
+          ctx.fillStyle = '#062033';
+          ctx.font = '600 ' + Math.max(8, Math.min(11, L.gapX * 0.13)) + 'px JetBrains Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(binomCoef(b.galton.row, b.galton.index)), b.position.x, b.position.y);
+        }
+      });
+    }
+
+    for (var si = state.sparks.length - 1; si >= 0; si--) {
+      var sp = state.sparks[si];
+      sp.x += sp.vx; sp.y += sp.vy; sp.life -= 0.035;
+      if (sp.life <= 0) { state.sparks.splice(si, 1); continue; }
+      ctx.globalAlpha = Math.max(0, sp.life);
+      ctx.fillStyle = sp.color;
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, 2.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    state.balls.forEach(function (ball) {
+      var g = ball.galton;
+      var kk = g.lockedBin !== null ? g.lockedBin : g.rights;
+      var col = colorOf(kk);
+      var r = CONFIG.ballRadius;
+      if (!state.reduced) {
+        ctx.strokeStyle = col;
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(ball.position.x, ball.position.y);
+        ctx.lineTo(ball.position.x - ball.velocity.x * 3, ball.position.y - ball.velocity.y * 3);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      var grd = ctx.createRadialGradient(ball.position.x - r * 0.35, ball.position.y - r * 0.4, r * 0.2, ball.position.x, ball.position.y, r);
+      grd.addColorStop(0, '#ffffff');
+      grd.addColorStop(0.45, col);
+      grd.addColorStop(1, '#0B1220');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(ball.position.x, ball.position.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    if (state.layers.hist && N > 0) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      var fs = Math.max(9, Math.min(state.present ? 16 : 12, L.gapX * 0.2));
+      ctx.font = '600 ' + fs + 'px JetBrains Mono, monospace';
+      for (var hk = 0; hk <= rows; hk++) {
+        var hc = counts[hk] || 0;
+        ctx.fillStyle = '#E8EDF6';
+        ctx.fillText(String(hc), binX(hk), L.wallTop - 4);
+        ctx.fillStyle = '#8A94A7';
+        ctx.font = (fs - 1) + 'px JetBrains Mono, monospace';
+        ctx.fillText((100 * hc / N).toFixed(hc === 0 ? 0 : 1) + '%', binX(hk), L.wallTop - 4 - fs);
+        ctx.font = '600 ' + fs + 'px JetBrains Mono, monospace';
+      }
+    }
+
+    if (state.layers.pascal) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#C4B5FD';
+      var pfs = Math.max(8, Math.min(12, L.gapX * 0.16));
+      ctx.font = pfs + 'px JetBrains Mono, monospace';
+      for (var pk = 0; pk <= rows; pk++) {
+        ctx.fillText(String(binomCoef(rows, pk)), binX(pk), CONFIG.floorY + 6);
+      }
+    }
+
+    function xOfK(k) { return L.cx + (k - rows / 2) * L.gapX; }
+  }
+
+  function modelP() {
+    if (!state.pure) return state.p;
+    var n = state.outcomes.length;
+    if (!n) return state.p;
+    return clamp(state.sum / n / state.rows, 0, 1);
+  }
+
+  function visitToShow() {
+    if (state.hero && !state.hero.galton.dead) return state.hero.galton.visited;
+    return state.lastVisited || [];
+  }
+
+  function computeStats() {
+    var n = state.outcomes.length;
+    var rows = state.rows;
+    var p = state.p;
+    var mu = rows * p;
+    var sigma = Math.sqrt(Math.max(0, rows * p * (1 - p)));
+    if (n === 0) return { n: 0, mean: NaN, sd: NaN, mu: mu, sigma: sigma, pHat: NaN, skew: NaN, chi: NaN, pValue: NaN, df: rows, bands: [NaN, NaN, NaN] };
+    var mean = state.sum / n;
+    var m2 = 0, m3 = 0;
+    for (var i = 0; i < n; i++) {
+      var d = state.outcomes[i] - mean;
+      m2 += d * d;
+      m3 += d * d * d;
+    }
+    var sd = n > 1 ? Math.sqrt(m2 / (n - 1)) : 0;
+    var pHat = clamp(mean / rows, 0, 1);
+    var pop = m2 / n;
+    var skew = pop > 1e-12 ? (m3 / n) / Math.pow(pop, 1.5) : 0;
+    var pModel = state.pure ? pHat : p;
+    var chi = 0, used = 0;
+    for (var k = 0; k <= rows; k++) {
+      var e = n * binomPmf(rows, k, pModel);
+      var o = state.counts[k] || 0;
+      if (e < 1e-9) {
+        if (o > 0) chi += (o * o) / 1e-6;
+        continue;
+      }
+      chi += (o - e) * (o - e) / e;
+      used++;
+    }
+    var df = Math.max(1, (state.pure ? used - 2 : used - 1));
+    var pValue = chiPValue(chi, df);
+    var center = state.pure ? mean : mu;
+    var spread = state.pure ? (sd || sigma) : sigma;
+    var bands = [0, 0, 0];
+    if (spread > 0) {
+      for (var j = 0; j < n; j++) {
+        var z = Math.abs(state.outcomes[j] - center) / spread;
+        if (z <= 1) bands[0]++;
+        if (z <= 2) bands[1]++;
+        if (z <= 3) bands[2]++;
+      }
+      for (var b = 0; b < 3; b++) bands[b] = 100 * bands[b] / n;
+    }
+    return { n: n, mean: mean, sd: sd, mu: mu, sigma: sigma, pHat: pHat, skew: skew, chi: chi, pValue: pValue, df: df, bands: bands };
+  }
+
+  function fmt(x, d) {
+    if (x === null || x === undefined || !isFinite(x)) return '—';
+    return Number(x).toFixed(d);
+  }
+
+  function updateDom(force) {
+    state.domTick++;
+    if (!force && state.domTick % 8 !== 0) return;
+    if (state.samplesDirty && state.domTick % 10 === 0) {
+      recomputeSamples();
+      state.samplesDirty = false;
+    }
+    var s = computeStats();
+    document.getElementById('stN').textContent = String(s.n);
+    document.getElementById('stFly').textContent = String(state.balls.length);
+    document.getElementById('stMean').textContent = fmt(s.mean, 3);
+    document.getElementById('stSd').textContent = fmt(s.sd, 3);
+    document.getElementById('stMu').textContent = fmt(s.mu, 3);
+    document.getElementById('stSigma').textContent = fmt(s.sigma, 3);
+    document.getElementById('stPhat').textContent = fmt(s.pHat, 3);
+    document.getElementById('stSkew').textContent = fmt(s.skew, 3);
+    var chiText = '—';
+    if (s.n >= 8 && isFinite(s.chi)) {
+      var pv = s.pValue < 0.0001 ? '<0.0001' : s.pValue.toFixed(4);
+      chiText = s.chi.toFixed(2) + '   p ' + pv + '   df ' + s.df;
+    }
+    document.getElementById('stChi').textContent = chiText;
+    var note = 'Drop balls to estimate the distribution.';
+    if (s.n >= 30 && isFinite(s.pValue)) {
+      note = state.pure
+        ? (s.pValue >= 0.05 ? 'Pure physics, compared with Binomial(n, p̂). The fit is plausible.' : 'Pure physics, compared with Binomial(n, p̂). The bins depart from that model.')
+        : (s.pValue >= 0.05 ? 'Compatible with the binomial model at this p.' : 'A poor fit to the binomial model at this p.');
+    } else if (s.n > 0) note = 'A few dozen balls make χ² jumpy. Keep dropping.';
+    document.getElementById('stNote').textContent = note;
+    captionEl.textContent = state.caption;
+    var showPath = state.layers.pascal;
+    pathEl.hidden = !showPath;
+    if (showPath) {
+      var path = (state.hero && !state.hero.galton.dead) ? (state.hero.galton.path || '…') : (state.lastPath || 'Drop a ball to light a path');
+      pathEl.textContent = path;
+    }
+    empirEl.hidden = !state.layers.empir;
+    if (state.layers.empir) {
+      var b0 = s.n ? fmt(s.bands[0], 1) + '%' : '—';
+      var b1 = s.n ? fmt(s.bands[1], 1) + '%' : '—';
+      var b2 = s.n ? fmt(s.bands[2], 1) + '%' : '—';
+      empirEl.textContent = '1σ  ' + b0 + '   ·   68%\n2σ  ' + b1 + '   ·   95%\n3σ  ' + b2 + '   ·   99.7%';
+    }
+    presentEl.textContent = s.n
+      ? 'N ' + s.n + '    mean ' + fmt(s.mean, 2) + '    SD ' + fmt(s.sd, 2)
+      : 'Drop balls to begin';
+    document.getElementById('queueLabel').textContent = state.queue ? ('Queued ' + state.queue) : 'Queue empty';
+    var se = s.sigma / Math.sqrt(state.sampleK);
+    document.getElementById('llnRead').textContent = s.n ? ('mean ' + fmt(s.mean, 3) + '  →  ' + fmt(s.mu, 2)) : 'mean → np';
+    document.getElementById('sampRead').textContent = state.sampleMeans.length
+      ? ('SD ' + fmt(state.sampleSd, 3) + '   ·   σ/√k ' + fmt(se, 3))
+      : ('σ/√k ' + fmt(se, 3));
+  }
+
+  function recomputeSamples() {
+    var n = state.outcomes.length;
+    var k = state.sampleK;
+    state.sampleMeans = [];
+    if (!n) { state.sampleSd = 0; return; }
+    var reps = CONFIG.sampleReps;
+    var sum = 0, sum2 = 0;
+    for (var i = 0; i < reps; i++) {
+      var s = 0;
+      for (var j = 0; j < k; j++) s += state.outcomes[(Math.random() * n) | 0];
+      var m = s / k;
+      state.sampleMeans.push(m);
+      sum += m;
+      sum2 += m * m;
+    }
+    state.sampleSd = reps > 1 ? Math.sqrt(Math.max(0, (sum2 - sum * sum / reps) / (reps - 1))) : 0;
+  }
+
+  function fitCanvas(canvas) {
+    var rect = canvas.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    var w = Math.max(1, Math.round(rect.width * dpr));
+    var h = Math.max(1, Math.round(rect.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    return { w: rect.width, h: rect.height, dpr: dpr };
+  }
+
+  function drawLln() {
+    var canvas = document.getElementById('lln');
+    var fit = fitCanvas(canvas);
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(fit.dpr, 0, 0, fit.dpr, 0, 0);
+    var W = fit.w, H = fit.h;
+    ctx.clearRect(0, 0, W, H);
+    var pad = { l: 34, r: 8, t: 8, b: 16 };
+    var rows = state.rows;
+    var mu = rows * state.p;
+    var sigma = Math.sqrt(Math.max(0, rows * state.p * (1 - state.p)));
+    var nMax = Math.max(8, state.outcomes.length);
+    function X(n) { return pad.l + (n / nMax) * (W - pad.l - pad.r); }
+    function Y(y) { return pad.t + (1 - y / Math.max(1, rows)) * (H - pad.t - pad.b); }
+    if (!state.lln.length) {
+      ctx.fillStyle = '#8A94A7';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('Drop balls — the mean walks toward np.', pad.l, H / 2);
+      return;
+    }
+    if (sigma > 0) {
+      ctx.beginPath();
+      for (var i = 0; i < state.lln.length; i++) {
+        var n = Math.max(1, state.lln[i].n);
+        var y = mu + sigma / Math.sqrt(n);
+        if (i === 0) ctx.moveTo(X(n), Y(y)); else ctx.lineTo(X(n), Y(y));
+      }
+      for (var j = state.lln.length - 1; j >= 0; j--) {
+        var n2 = Math.max(1, state.lln[j].n);
+        ctx.lineTo(X(n2), Y(mu - sigma / Math.sqrt(n2)));
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(56,189,248,0.16)';
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(167,139,250,0.9)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, Y(mu));
+    ctx.lineTo(W - pad.r, Y(mu));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#E8EDF6';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    for (var t = 0; t < state.lln.length; t++) {
+      var pt = state.lln[t];
+      if (t === 0) ctx.moveTo(X(pt.n), Y(pt.mean)); else ctx.lineTo(X(pt.n), Y(pt.mean));
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#8A94A7';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillText('0', pad.l, H - 3);
+    ctx.fillText(String(nMax), W - pad.r - 28, H - 3);
+    ctx.fillText(mu.toFixed(1), 2, Y(mu) + 3);
+  }
+
+  function drawSamp() {
+    var canvas = document.getElementById('samp');
+    var fit = fitCanvas(canvas);
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(fit.dpr, 0, 0, fit.dpr, 0, 0);
+    var W = fit.w, H = fit.h;
+    ctx.clearRect(0, 0, W, H);
+    var pad = { l: 28, r: 8, t: 8, b: 16 };
+    var mu = state.rows * state.p;
+    var sigma = Math.sqrt(Math.max(0, state.rows * state.p * (1 - state.p)));
+    var se = sigma / Math.sqrt(state.sampleK);
+    if (!state.sampleMeans.length) {
+      ctx.fillStyle = '#8A94A7';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('Sample means of size k show up after balls land.', pad.l, H / 2);
+      return;
+    }
+    var spread = Math.max(se, 0.35);
+    var lo = mu - 4.2 * spread;
+    var hi = mu + 4.2 * spread;
+    var bins = 22;
+    var counts = [];
+    for (var i = 0; i < bins; i++) counts.push(0);
+    state.sampleMeans.forEach(function (m) {
+      var idx = Math.floor((m - lo) / (hi - lo) * bins);
+      if (idx < 0) idx = 0;
+      if (idx >= bins) idx = bins - 1;
+      counts[idx]++;
+    });
+    var max = 1;
+    for (var c = 0; c < bins; c++) if (counts[c] > max) max = counts[c];
+    var bw = (W - pad.l - pad.r) / bins;
+    ctx.fillStyle = 'rgba(56,189,248,0.75)';
+    for (var b = 0; b < bins; b++) {
+      var bh = (counts[b] / max) * (H - pad.t - pad.b);
+      ctx.fillRect(pad.l + b * bw + 1, H - pad.b - bh, Math.max(1, bw - 2), bh);
+    }
+    if (se > 0) {
+      ctx.beginPath();
+      var reps = state.sampleMeans.length;
+      var binW = (hi - lo) / bins;
+      for (var s = 0; s <= 60; s++) {
+        var x = lo + (hi - lo) * s / 60;
+        var dens = reps * binW * normalPdf(x, mu, se);
+        var px = pad.l + ((x - lo) / (hi - lo)) * (W - pad.l - pad.r);
+        var py = H - pad.b - (dens / max) * (H - pad.t - pad.b);
+        if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = '#C4B5FD';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#8A94A7';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillText(lo.toFixed(1), pad.l, H - 3);
+    ctx.fillText(hi.toFixed(1), W - pad.r - 24, H - 3);
+  }
+
+  function ensureRender() {
+    if (state.render) return;
+    var rect = xray.getBoundingClientRect();
+    state.render = Render.create({
+      canvas: xray,
+      engine: engine,
+      options: {
+        width: Math.max(10, rect.width),
+        height: Math.max(10, rect.height),
+        pixelRatio: window.devicePixelRatio || 1,
+        wireframes: true,
+        showVelocity: true,
+        showCollisions: true,
+        showAngleIndicator: true,
+        showSleeping: true,
+        background: 'transparent',
+        wireframeBackground: 'transparent',
+        wireframeStrokeStyle: '#9bd7fb',
+        hasBounds: true
+      }
+    });
+    xray.style.background = 'transparent';
+  }
+
+  function fitRender() {
+    if (!state.render) return;
+    var rect = xray.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    state.render.options.width = Math.max(10, rect.width);
+    state.render.options.height = Math.max(10, rect.height);
+    state.render.options.pixelRatio = dpr;
+    state.render.canvas.width = Math.max(10, Math.round(rect.width * dpr));
+    state.render.canvas.height = Math.max(10, Math.round(rect.height * dpr));
+    xray.style.width = '100%';
+    xray.style.height = '100%';
+    Render.lookAt(state.render, {
+      min: { x: 0, y: 0 },
+      max: { x: CONFIG.worldW, y: CONFIG.worldH }
+    }, { x: 0, y: 0 }, true);
+  }
+
+  function setXray(on) {
+    state.layers.xray = on;
+    if (on) {
+      ensureRender();
+      fitRender();
+      if (!state.xrayOn) { Render.run(state.render); state.xrayOn = true; }
+    } else if (state.render && state.xrayOn) {
+      Render.stop(state.render);
+      state.xrayOn = false;
+      var ctx = xray.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, xray.width, xray.height);
+    }
+    syncLayers();
+  }
+
+  function syncLayers() {
+    document.querySelectorAll('[data-layer]').forEach(function (btn) {
+      var on = !!state.layers[btn.getAttribute('data-layer')];
+      btn.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  }
+
+  function syncControls() {
+    document.getElementById('rowsSlider').value = String(state.rows);
+    document.getElementById('rowsOut').textContent = String(state.rows);
+    document.getElementById('pSlider').value = String(state.p);
+    document.getElementById('pOut').textContent = state.p.toFixed(2);
+    document.getElementById('tiltSlider').value = String(state.tilt);
+    document.getElementById('tiltOut').textContent = state.tilt.toFixed(2);
+    document.getElementById('rateSlider').value = String(state.rate);
+    document.getElementById('rateOut').textContent = String(state.rate);
+    document.getElementById('speedSlider').value = String(state.speed);
+    document.getElementById('speedOut').textContent = state.speed + '×';
+    document.getElementById('kSlider').value = String(state.sampleK);
+    document.getElementById('kOut').textContent = String(state.sampleK);
+    document.getElementById('pureSwitch').setAttribute('aria-checked', state.pure ? 'true' : 'false');
+    syncLayers();
+    document.querySelectorAll('.scenario').forEach(function (btn) {
+      btn.classList.toggle('on', btn.getAttribute('data-scenario') === state.scenarioId);
+    });
+    document.getElementById('chart-lln').classList.toggle('hot', state.scenarioId === 'lln');
+    document.getElementById('chart-samp').classList.toggle('hot', state.scenarioId === 'samp');
+  }
+
+  function markCustom() {
+    if (state.applying) return;
+    state.scenarioId = null;
+    state.caption = 'Custom board. Drop balls to read this p and row count.';
+    syncControls();
+  }
+
+  function dismissIntro(andReset) {
+    if (!state.intro && !andReset) return;
+    state.intro = false;
+    introEl.hidden = true;
+    viewport.classList.remove('preview');
+    if (andReset) {
+      clearBalls();
+      resetData();
+    }
+  }
+
+  function requestDrop(n) {
+    if (state.intro) dismissIntro(true);
+    state.queue += n;
+    updateDom(true);
+  }
+
+  function resetExperiment() {
+    if (state.intro) dismissIntro(false);
+    clearBalls();
+    resetData();
+    updateDom(true);
+  }
+
+  function applyScenario(id) {
+    if (state.intro) dismissIntro(false);
+    state.applying = true;
+    state.scenarioId = id;
+    state.pure = false;
+    state.tilt = 0;
+    state.speed = 1;
+    state.rate = CONFIG.defaultRate;
+    state.p = 0.5;
+    state.rows = 12;
+    state.layers = { hist: true, binom: false, normal: false, empir: false, pascal: false, xray: state.layers.xray };
+    var queue = 0;
+    if (id === 'bell') {
+      state.caption = 'Fair coins, 12 rows. The stacks should mound in the middle.';
+    } else if (id === 'skew') {
+      state.p = 0.25;
+      state.caption = 'p = 0.25. Right turns are rare, so the histogram leans left.';
+    } else if (id === 'rows') {
+      state.rowsFlip = state.rowsFlip === 4 ? 16 : 4;
+      state.rows = state.rowsFlip;
+      state.caption = state.rows === 4
+        ? '4 rows — five bins, a coarse histogram. Open this scenario again for 16.'
+        : '16 rows — same fair coin, a smoother bell. Open again to return to 4.';
+    } else if (id === 'empir') {
+      state.layers.normal = true;
+      state.layers.empir = true;
+      state.caption = 'Drop 1,000 balls and compare the live percents with 68%, 95%, and 99.7%.';
+    } else if (id === 'lln') {
+      state.speed = 2;
+      state.rate = 40;
+      queue = 400;
+      state.caption = 'Streaming 400 balls. The running mean should settle on np inside a shrinking band.';
+    } else if (id === 'samp') {
+      state.sampleK = 10;
+      state.speed = 2;
+      state.rate = 40;
+      queue = 400;
+      state.caption = 'Samples of size k. Their means bunch up, and the SD should sit near σ/√k.';
+    } else if (id === 'pure') {
+      state.pure = true;
+      state.tilt = 0.35;
+      state.caption = 'Nudges off, board tilted. p̂ is estimated from the bins — compare it with 0.50.';
+    }
+    rebuild();
+    state.queue = queue;
+    state.applying = false;
+    syncControls();
+    updateDom(true);
+  }
+
+  function toggleLayer(name) {
+    if (name === 'xray') setXray(!state.layers.xray);
+    else {
+      state.layers[name] = !state.layers[name];
+      syncLayers();
+    }
+  }
+
+  function togglePresent() {
+    state.present = !state.present;
+    document.body.classList.toggle('present', state.present);
+    document.getElementById('presentBtn').setAttribute('aria-pressed', state.present ? 'true' : 'false');
+    if (state.present) document.body.classList.remove('side-open');
+  }
+
+  function toggleHelp(force) {
+    state.help = typeof force === 'boolean' ? force : !state.help;
+    helpEl.hidden = !state.help;
+  }
+
+  function releaseDrag() {
+    if (!state.drag) return;
+    Composite.remove(engine.world, state.drag);
+    state.drag = null;
+  }
+
+  art.addEventListener('pointerdown', function (e) {
+    if (state.intro) return;
+    var w = screenToWorld(e.clientX, e.clientY);
+    var hits = Query.point(Composite.allBodies(engine.world), w);
+    var ball = null;
+    for (var i = 0; i < hits.length; i++) if (hits[i].label === 'ball') { ball = hits[i]; break; }
+    if (!ball) return;
+    Body.setPosition(state.mouse, w);
+    state.drag = Constraint.create({
+      bodyA: state.mouse,
+      bodyB: ball,
+      pointA: { x: 0, y: 0 },
+      pointB: { x: 0, y: 0 },
+      stiffness: 0.35,
+      damping: 0.2,
+      length: 0
+    });
+    Composite.add(engine.world, state.drag);
+    try { art.setPointerCapture(e.pointerId); } catch (err) { /* untrusted pointer */ }
+    e.preventDefault();
+  });
+  art.addEventListener('pointermove', function (e) {
+    if (!state.drag) return;
+    var w = screenToWorld(e.clientX, e.clientY);
+    Body.setPosition(state.mouse, w);
+    Body.setVelocity(state.mouse, { x: 0, y: 0 });
+  });
+  function endPointer() { releaseDrag(); }
+  art.addEventListener('pointerup', endPointer);
+  art.addEventListener('pointercancel', endPointer);
+
+  document.getElementById('startBtn').addEventListener('click', function () { dismissIntro(true); updateDom(true); });
+  document.getElementById('helpBtn').addEventListener('click', function () { toggleHelp(); });
+  document.getElementById('helpClose').addEventListener('click', function () { toggleHelp(false); });
+  document.getElementById('presentBtn').addEventListener('click', togglePresent);
+  document.getElementById('layersBtn').addEventListener('click', function () {
+    if (window.innerWidth <= 980) document.body.classList.toggle('side-open');
+    var sec = document.getElementById('sec-layers');
+    sec.setAttribute('data-open', 'true');
+    sec.querySelector('.ph').setAttribute('aria-expanded', 'true');
+    sec.scrollIntoView({ block: 'nearest' });
+  });
+  document.getElementById('scrim').addEventListener('click', function () { document.body.classList.remove('side-open'); });
+  document.getElementById('resetBtn').addEventListener('click', resetExperiment);
+  document.getElementById('pureSwitch').addEventListener('click', function () {
+    state.pure = !state.pure;
+    markCustom();
+    rebuild();
+    syncControls();
+  });
+  document.querySelectorAll('[data-drop]').forEach(function (btn) {
+    btn.addEventListener('click', function () { requestDrop(Number(btn.getAttribute('data-drop'))); });
+  });
+  document.querySelectorAll('.scenario').forEach(function (btn) {
+    btn.addEventListener('click', function () { applyScenario(btn.getAttribute('data-scenario')); });
+  });
+  document.querySelectorAll('[data-layer]').forEach(function (btn) {
+    btn.addEventListener('click', function () { toggleLayer(btn.getAttribute('data-layer')); });
+  });
+  document.querySelectorAll('.ph').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var panel = btn.parentElement;
+      var open = panel.getAttribute('data-open') !== 'false';
+      panel.setAttribute('data-open', open ? 'false' : 'true');
+      btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+    });
+  });
+
+  function bindSlider(id, outId, parse, apply) {
+    var input = document.getElementById(id);
+    var out = document.getElementById(outId);
+    input.addEventListener('input', function () {
+      var v = parse(input.value);
+      out.textContent = apply(v, true);
+    });
+  }
+  bindSlider('rowsSlider', 'rowsOut', function (v) { return parseInt(v, 10); }, function (v) {
+    if (v !== state.rows) { state.rows = v; markCustom(); rebuild(); }
+    return String(v);
+  });
+  bindSlider('pSlider', 'pOut', Number, function (v) {
+    if (Math.abs(v - state.p) > 1e-9) {
+      state.p = v;
+      markCustom();
+      clearBalls();
+      resetData();
+    }
+    return v.toFixed(2);
+  });
+  bindSlider('tiltSlider', 'tiltOut', Number, function (v) {
+    state.tilt = v;
+    if (state.pure) engine.gravity.x = v;
+    markCustom();
+    return v.toFixed(2);
+  });
+  bindSlider('rateSlider', 'rateOut', function (v) { return parseInt(v, 10); }, function (v) {
+    state.rate = v;
+    return String(v);
+  });
+  bindSlider('speedSlider', 'speedOut', function (v) { return parseInt(v, 10); }, function (v) {
+    state.speed = v;
+    return v + '×';
+  });
+  document.getElementById('kSlider').addEventListener('input', function (e) {
+    state.sampleK = parseInt(e.target.value, 10);
+    document.getElementById('kOut').textContent = String(state.sampleK);
+    state.samplesDirty = true;
+    updateDom(true);
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', function () {
+    var lines = ['bin,count,relative_frequency'];
+    var n = Math.max(1, state.outcomes.length);
+    for (var k = 0; k < state.counts.length; k++) {
+      lines.push(k + ',' + state.counts[k] + ',' + (state.counts[k] / n).toFixed(6));
+    }
+    var text = lines.join('\n');
+    var btn = document.getElementById('copyBtn');
+    function done() {
+      btn.textContent = 'Copied';
+      setTimeout(function () { btn.textContent = 'Copy counts as CSV'; }, 1200);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (err) { /* ignore */ }
+    ta.remove();
+  }
+
+  window.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key === 'Escape') {
+      if (state.help) toggleHelp(false);
+      else if (state.present) togglePresent();
+      else if (state.intro) dismissIntro(true);
+      return;
+    }
+    if (e.key === '?' || (e.code === 'Slash' && e.shiftKey)) { toggleHelp(); e.preventDefault(); return; }
+    if (e.code === 'KeyP' && e.shiftKey) { toggleLayer('pascal'); e.preventDefault(); return; }
+    if (e.code === 'KeyP') { togglePresent(); return; }
+    var map = { KeyH: 'hist', KeyB: 'binom', KeyN: 'normal', KeyE: 'empir', KeyX: 'xray' };
+    if (map[e.code]) { toggleLayer(map[e.code]); return; }
+    if (e.key === '1') requestDrop(1);
+    else if (e.key === '2') requestDrop(10);
+    else if (e.key === '3') requestDrop(100);
+    else if (e.key === '4') requestDrop(1000);
+    else if (e.key === 'r' || e.key === 'R') resetExperiment();
+  });
+
+  motionQuery.addEventListener('change', function () { state.reduced = motionQuery.matches; });
+  window.addEventListener('resize', function () { if (state.layers.xray) fitRender(); });
+  if (window.ResizeObserver) new ResizeObserver(function () { if (state.layers.xray) fitRender(); }).observe(viewport);
+
+  function loop() {
+    if (!state.paused && !document.hidden) {
+      var steps = state.speed;
+      for (var i = 0; i < steps; i++) physicsStep();
+    }
+    draw();
+    drawLln();
+    drawSamp();
+    if (state.layers.xray && state.render) {
+      Render.lookAt(state.render, {
+        min: { x: 0, y: 0 },
+        max: { x: CONFIG.worldW, y: CONFIG.worldH }
+      }, { x: 0, y: 0 }, true);
+    }
+    updateDom(false);
+    requestAnimationFrame(loop);
+  }
+
+  function runAcceptance(n) {
+    state.intro = false;
+    introEl.hidden = true;
+    viewport.classList.remove('preview');
+    state.paused = true;
+    state.pure = false;
+    state.tilt = 0;
+    state.p = 0.5;
+    state.rows = 12;
+    state.rate = 60;
+    state.speed = 1;
+    rebuild();
+    state.queue = n;
+    var guard = 0;
+    while (state.outcomes.length < n && guard < 40000) {
+      physicsStep();
+      guard++;
+    }
+    var s = computeStats();
+    return {
+      n: s.n,
+      mean: s.mean,
+      sd: s.sd,
+      mu: s.mu,
+      sigma: s.sigma,
+      meanErr: s.mean - s.mu,
+      sdRatio: s.sd / s.sigma,
+      misses: state.misses,
+      badPaths: state.badPaths,
+      frames: guard,
+      pass: s.n === n && Math.abs(s.mean - s.mu) <= 0.3 && s.sd <= s.sigma * 1.1 && s.sd >= s.sigma * 0.9
+    };
+  }
+
+  rebuild();
+  syncControls();
+  document.querySelector('.scenario[data-scenario="bell"]').classList.add('on');
+
+  var params = new URLSearchParams(location.search);
+  if (params.has('accept')) {
+    var result = runAcceptance(2000);
+    var pre = document.createElement('pre');
+    pre.id = 'accept';
+    pre.textContent = JSON.stringify(result, null, 2);
+    document.body.appendChild(pre);
+    state.paused = true;
+  } else {
+    if (params.has('start')) dismissIntro(true);
+    requestAnimationFrame(loop);
+  }
+
+  window.__galton = {
+    state: state,
+    screenToWorld: screenToWorld,
+    requestDrop: requestDrop,
+    dismissIntro: dismissIntro,
+    runAcceptance: runAcceptance,
+    setXray: setXray,
+    applyScenario: applyScenario,
+    togglePresent: togglePresent,
+    toggleHelp: toggleHelp,
+    viewOf: viewOf
+  };
+})();
+</script>
+</body>
+</html>
