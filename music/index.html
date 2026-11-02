@@ -487,6 +487,7 @@ kbd { background: none; border-radius: 3px; }
       <h5>Play</h5>
       <div class="hk"><span>Drop C … C (white keys)</span><span><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd></span></div>
       <div class="hk"><span>Play sharps (black keys)</span><span><kbd>W</kbd><kbd>E</kbd><kbd>T</kbd><kbd>Y</kbd><kbd>U</kbd></span></div>
+      <div class="hk"><span>Octave string experiment</span><span><kbd>O</kbd></span></div>
       <div class="hk"><span>Octave down / up</span><span><kbd>Z</kbd><kbd>X</kbd></span></div>
       <div class="hk"><span>Strike a key / drop a chord</span><span><kbd>Click</kbd></span></div>
       <div class="hk"><span>Drag a falling ball</span><span><kbd>Drag</kbd></span></div>
@@ -772,11 +773,48 @@ setInterval(() => {
   })();
   elise.sort((a, b) => a.beat - b.beat || a.midi - b.midi);
 
+  // parse 'C4:1 Bb4:.5 r:1 | ...' (name:durationInBeats; '|' bar lines ignored; r = rest)
+  function mel(str) {
+    const out = []; let beat = 0;
+    for (const tok of str.split(/\s+/)) {
+      if (!tok || tok === '|') continue;
+      const [nm, d] = tok.split(':'), dur = parseFloat(d);
+      const m = /^([A-G])([#b]?)(-?\d)$/.exec(nm);
+      if (m) out.push({ midi: 12 * (+m[3] + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0), beat, dur });
+      beat += dur;
+    }
+    return out;
+  }
+
   const SONGS = {
     ode: { title: 'Ode to Joy', composer: 'Beethoven', meter: '4/4', bpm: 108, notes: ode },
     twinkle: { title: 'Twinkle Twinkle Little Star', composer: 'Traditional', meter: '4/4', bpm: 100, notes: twinkle },
     frere: { title: 'Frère Jacques', composer: 'Traditional', meter: '4/4', bpm: 112, notes: frere },
     elise: { title: 'Für Elise (opening)', composer: 'Beethoven', meter: '3/8', bpm: 66, notes: elise },
+    // F major, 3/4, pickup (dotted eighth + sixteenth), 4 phrases
+    happy: { title: 'Happy Birthday', composer: 'Hill sisters', meter: '3/4', bpm: 100, notes: mel(
+      'C4:.75 C4:.25 | D4:1 C4:1 F4:1 | E4:2 C4:.75 C4:.25 | D4:1 C4:1 G4:1 | F4:2 C4:.75 C4:.25 | ' +
+      'C5:1 A4:1 F4:1 | E4:1 D4:1 Bb4:.75 Bb4:.25 | A4:1 F4:1 G4:1 | F4:3') },
+    // G major, 4/4, chorus (16 bars)
+    jingle: { title: 'Jingle Bells (chorus)', composer: 'J. Pierpont', meter: '4/4', bpm: 132, notes: mel(
+      'B4:1 B4:1 B4:2 | B4:1 B4:1 B4:2 | B4:1 D5:1 G4:1.5 A4:.5 | B4:4 | ' +
+      'C5:1 C5:1 C5:1.5 C5:.5 | C5:1 B4:1 B4:1 B4:.5 B4:.5 | B4:1 A4:1 A4:1 B4:1 | A4:2 D5:2 | ' +
+      'B4:1 B4:1 B4:2 | B4:1 B4:1 B4:2 | B4:1 D5:1 G4:1.5 A4:.5 | B4:4 | ' +
+      'C5:1 C5:1 C5:1 C5:1 | C5:1 B4:1 B4:1 B4:.5 B4:.5 | D5:1 D5:1 C5:1 A4:1 | G4:4') },
+    // G major, 3/4, pickup, full verse (tune "New Britain")
+    grace: { title: 'Amazing Grace', composer: 'Traditional', meter: '3/4', bpm: 80, notes: mel(
+      'D4:1 | G4:2 B4:.5 G4:.5 | B4:2 A4:1 | G4:2 E4:1 | D4:2 D4:1 | G4:2 B4:.5 G4:.5 | B4:2 A4:1 | D5:5 B4:.5 D5:.5 | ' +
+      'D5:2 B4:.5 G4:.5 | B4:2 A4:1 | G4:2 E4:1 | D4:2 D4:1 | G4:2 B4:.5 G4:.5 | B4:2 A4:1 | G4:5') },
+    // G major, 3/4, first 16 bars, right hand
+    minuet: { title: 'Minuet in G', composer: 'Petzold (BWV Anh. 114)', meter: '3/4', bpm: 120, notes: mel(
+      'D5:1 G4:.5 A4:.5 B4:.5 C5:.5 | D5:1 G4:1 G4:1 | E5:1 C5:.5 D5:.5 E5:.5 F#5:.5 | G5:1 G4:1 G4:1 | ' +
+      'C5:1 D5:.5 C5:.5 B4:.5 A4:.5 | B4:1 C5:.5 B4:.5 A4:.5 G4:.5 | F#4:1 G4:.5 A4:.5 B4:.5 G4:.5 | A4:3 | ' +
+      'D5:1 G4:.5 A4:.5 B4:.5 C5:.5 | D5:1 G4:1 G4:1 | E5:1 C5:.5 D5:.5 E5:.5 F#5:.5 | G5:1 G4:1 G4:1 | ' +
+      'C5:1 D5:.5 C5:.5 B4:.5 A4:.5 | B4:1 C5:.5 B4:.5 A4:.5 G4:.5 | A4:1 B4:.5 A4:.5 G4:.5 F#4:.5 | G4:3') },
+    // B minor, 4/4, opening theme (4 bars, played twice)
+    mountain: { title: 'In the Hall of the Mountain King', composer: 'Grieg', meter: '4/4', bpm: 100, notes: mel(
+      ('B3:.5 C#4:.5 D4:.5 E4:.5 F#4:.5 D4:.5 F#4:1 | E#4:.5 C#4:.5 E#4:1 E4:.5 C4:.5 E4:1 | ' +
+      'B3:.5 C#4:.5 D4:.5 E4:.5 F#4:.5 D4:.5 F#4:.5 B4:.5 | A4:.5 F#4:.5 D4:.5 F#4:.5 A4:2 | ').repeat(2)) },
   };
 
   GP.Theory = { NOTE_NAMES, SCALES, name, freq, isBlack, inScale, snap, scaleNoteNames, interval, chord, staffPos, SONGS };
@@ -1070,8 +1108,9 @@ setInterval(() => {
     v.nodes.forEach(n => { try { n.disconnect(); } catch (e) {} });
   }
 
-  function play(midi, velocity) {
-    if (!ctx) return;
+  // opts.hold: the key is held down, so the note sustains (slow decay) until release(handle)
+  function play(midi, velocity, opts) {
+    if (!ctx) return null;
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const c = A();
     const vel = clamp(velocity == null ? 0.7 : +velocity, 0.02, 1);
@@ -1085,12 +1124,13 @@ setInterval(() => {
     const f0 = mtof(m);
     const nyq = ctx.sampleRate / 2;
     const t0 = ctx.currentTime + 0.002;
-    const tau = R.tau(m);
-    const end = t0 + tau * 6;               // ~ -52 dB, then stop
+    const hold = !!(opts && opts.hold);
+    const tau = R.tau(m) * (hold ? 3 : 1);   // a held piano note rings much longer
+    const end = t0 + Math.min(tau * 6, 14);               // ~ -52 dB, then stop
     const atk = c.attack;
     const peak = c.voiceGain * R.level * (0.12 + 0.88 * Math.pow(vel, 1.4));
 
-    const v = { start: t0, midi, sources: [], nodes: [], out: null, dead: false, cleaned: false };
+    const v = { start: t0, midi, sources: [], nodes: [], out: null, dead: false, cleaned: false, held: hold };
 
     // voice output -> lowpass -> compressor
     const out = ctx.createGain();
@@ -1136,7 +1176,7 @@ setInterval(() => {
       v.sources.push(o); v.nodes.push(g);
       if (!main) main = o;
     }
-    if (!main) return;
+    if (!main) return null;
 
     // hammer / mallet click: short bandpassed burst from the shared noise buffer
     const hm = c.hammerMs / 1000;
@@ -1158,11 +1198,22 @@ setInterval(() => {
 
     main.onended = () => cleanup(v);
     voices.push(v);
+    return v;
+  }
+
+  // Key released: the damper stops the string (fast but not clicky fade).
+  function release(v) {
+    if (!ctx || !v || v.dead || !v.held) return;
+    v.held = false;
+    const t = ctx.currentTime, g = v.out.gain;
+    try { g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.setTargetAtTime(0, t, 0.07); } catch (e) {}
+    v.sources.forEach(s => { try { s.stop(t + 0.6); } catch (e) {} });
   }
 
   GP.Audio = {
     init,
     play,
+    release,
     setWet,
     setVolume,
     get analyser() { return analyser; },
@@ -1326,13 +1377,21 @@ setInterval(() => {
     return clamp(0.15 + (imp - 2) / 16 * 0.85, 0.15, 1);
   }
 
-  function soundKey(key, vel, x, y) {
+  function soundKey(key, vel, x, y, opts) {
     const t = now();
     const sounded = snap(key.midi);
-    GP.Audio && GP.Audio.play && GP.Audio.play(sounded, vel);
+    const voice = GP.Audio && GP.Audio.play ? GP.Audio.play(sounded, vel, opts) : null;
+    if (opts && opts.hold) key.held = (key.held || 0) + 1;
     key.litUntil = t + 0.35;
     key.color = GP.noteColor(sounded);
     GP.emit('note', { midi: sounded, velocity: vel, x, y, time: t, keyMidi: key.midi });
+    return { voice, key, hold: !!(opts && opts.hold) };
+  }
+  // Let go of a held key: damp its note and let the spring lift the key.
+  function releaseKey(h) {
+    if (!h) return;
+    GP.Audio && GP.Audio.release && GP.Audio.release(h.voice);
+    if (h.hold && h.key) h.key.held = Math.max(0, (h.key.held || 0) - 1);
   }
 
   function onCollisionStart(ev) {
@@ -1404,17 +1463,18 @@ setInterval(() => {
       e.x = emitterPath[emitIndex % emitterPath.length];
       emitIndex++;
     }
-    const j = MC.emitterJitter;
+    // preset paths aim at exact spots (e.g. the narrow white strip between two black keys): keep jitter tiny there
+    const j = emitterPath ? Math.min(1, MC.emitterJitter) : MC.emitterJitter;
     return makeBall(e.x + Common.random(-j, j), e.y + 14, null, AMBER);
   }
 
-  function strikeKey(midi, velocity) {
+  function strikeKey(midi, velocity, opts) {
     const { Body } = M();
     const key = GP.keyByMidi(midi);
-    if (!key) return;
+    if (!key) return null;
     const v = velocity == null ? 0.7 : clamp(velocity, 0, 1);
     Body.setVelocity(key.body, { x: 0, y: 2 + 5 * v });
-    soundKey(key, v, key.x, key.top);
+    return soundKey(key, v, key.x, key.top, opts);
   }
 
   // ---------------------------------------------------------------- step
@@ -1554,18 +1614,22 @@ setInterval(() => {
       items.push({ type: 'ramp', x1: 1180, y1: 380, x2: 1080, y2: 470 });
       return { emitter: { x: 791, y: 90 }, path: null, items };
     },
-    // An ascending staircase: the emitter walks up the stairs one step per beat and each step
-    // rolls its ball off its right edge onto the next note of the C major scale.
+    // An ascending staircase: the emitter walks up the stairs one step per beat and each ball
+    // drops past a stair nose straight onto the next note of the C major scale (C4..C5).
     staircase() {
       const scale = [60, 62, 64, 65, 67, 69, 71, 72];
+      // drop line offset from the white-key centre, chosen inside the visible white strip so the ball
+      // (radius + emitter jitter) never grazes a raised black key: C/F lean left (black on their right),
+      // E/B lean right (black on their left), D/G/A sit dead centre between their two black keys
+      const lean = { 0: -2, 2: 0, 4: 2, 5: -2, 7: 0, 9: 0, 11: 2 };
       const items = [], path = [];
       scale.forEach((m, i) => {
-        const kx = keyX(m);
+        const x = keyX(m) + lean[m % 12];
         const y = 600 - i * 52;
-        // each tread sits just right of its key's drop line (stairs climb to the right with the pitch);
-        // the ball falls past the stair nose straight onto its note
-        items.push({ type: 'ramp', x1: kx + 18, y1: y + 2, x2: kx + 48, y2: y });
-        path.push(kx);
+        // each tread ends just left of its drop line (stairs climb to the right with the pitch);
+        // treads stay clear of every ball's fall line, so the balls never touch them
+        items.push({ type: 'ramp', x1: x - 44, y1: y + 2, x2: x - 20, y2: y });
+        path.push(x);
       });
       return { emitter: { x: path[0], y: 90 }, path, items };
     },
@@ -1641,13 +1705,14 @@ setInterval(() => {
     ptr.kind = 'key';
     if (GP.state.layers.chord && GP.Theory && GP.Theory.chord) {
       const ch = GP.Theory.chord(key.midi, GP.state.chordQuality);
-      ch.notes.forEach(m => (GP.state.keyMode === 'drop' ? dropBall(m) : strikeKey(m, 0.75)));
+      ptr.held = [];
+      ch.notes.forEach(m => (GP.state.keyMode === 'drop' ? dropBall(m) : ptr.held.push(strikeKey(m, 0.75, { hold: true }))));
       GP.lastChord = { name: ch.name, notes: ch.noteNames, time: now() };
       GP.emit('chord', { name: ch.name, notes: ch.noteNames, rootMidi: key.midi });
     } else {
       // lower on the key = louder, like a real key struck deeper
       const v = clamp(0.45 + (y - key.top) / key.h * 0.5, 0.3, 1);
-      strikeKey(key.midi, v);
+      ptr.held = [strikeKey(key.midi, v, { hold: true })];
     }
   }
 
@@ -1667,6 +1732,7 @@ setInterval(() => {
   function pointerUp(x, y) {
     if (!ptr) return;
     if (x == null) { x = ptr.x; y = ptr.y; }
+    if (ptr.held) ptr.held.forEach(releaseKey);
     if (ptr.kind === 'drag') endDrag();
     else if (ptr.kind === 'build') {
       const d = Math.hypot(x - ptr.x0, y - ptr.y0);
@@ -1730,7 +1796,7 @@ setInterval(() => {
   }
 
   GP.Physics = {
-    init, step, dropBall, emitBall, strikeKey,
+    init, step, dropBall, emitBall, strikeKey, releaseKey,
     addBumper, addRamp, removeAt, clearMachine, loadPreset, saveMachine, loadMachine,
     pointerDown, pointerMove, pointerUp, setXray, xrayFit,
     get engine() { return engine; },
@@ -1745,7 +1811,7 @@ setInterval(() => {
 // ============================================================
 // GP.FX: two note effects that are REAL Matter.js bodies in the same engine
 //  1. Steam: light circles pushed up by a buoyancy force each update. They bump into
-//     each other, into falling balls and into machine ramps (see them in X-ray).
+//     each other and into machine ramps, but never into balls, so songs stay exact (see X-ray).
 //  2. Strings: a chain of small bodies linked by spring Constraints, pinned at both ends
 //     above the key. A note plucks it: low notes swing slowly and ring long, high notes fast and short.
 // ============================================================
@@ -1759,8 +1825,7 @@ CONFIG.fx = {
   steamMax: 140,          // cap on live steam bodies
   stringSegments: 9,      // bodies per string
   stringLength: 170,      // px, from just above the key upward
-  stringStiffLow: 0.05,   // spring stiffness for C3 (slow swing)
-  stringStiffHigh: 0.5,   // spring stiffness for C6 (fast swing)
+  stringStiffLow: 0.02,   // spring stiffness for C3; higher notes are calibrated so the swing rate doubles per octave
   stringDampLow: 0.006,   // air friction for low strings (ring long)
   stringDampHigh: 0.045,  // air friction for high strings (die fast)
   stringPluck: 7,         // px per step sideways kick at full velocity
@@ -1798,12 +1863,15 @@ CONFIG.fx = {
         Body.applyForce(b, b.position, { x: Math.sin(age * 3 + b.id) * m * gs * 0.25, y: -m * gs * FX.steamLift });
       }
       strings.forEach(st => { for (const b of st.bodies) Body.applyForce(b, b.position, { x: 0, y: -b.mass * gs }); });
+      for (const k of GP.keys) if (k.held > 0) Body.setVelocity(k.body, { x: 0, y: 2.5 }); // held key stays pressed on the bed
       // let balls and machine parts collide with steam (the other side of the collision filter)
-      for (const ball of GP.balls) ball.body.collisionFilter.mask |= CAT_STEAM;
       for (const it of GP.machine) if (it.body && it.body.collisionFilter.mask) it.body.collisionFilter.mask |= CAT_STEAM;
     });
     // Lifetimes, after each update
     Events.on(engine, 'afterUpdate', cleanup);
+    // calibrate every key's string in the background, one key per idle slice, so playing never hitches
+    let m = CONFIG.keys.lowMidi;
+    (function warm() { if (m > CONFIG.keys.highMidi) return; stiffFor(m++); setTimeout(warm, 40); })();
     GP.FX.modules = [
       { name: 'Events', what: 'beforeUpdate applies buoyancy to steam and cancels gravity on the strings each step.' },
       { name: 'Composites', what: 'Composites.chain links each string of bodies with spring Constraints.' },
@@ -1819,7 +1887,12 @@ CONFIG.fx = {
       if (t - s.born > s.life || s.body.position.y < -40) { Composite.remove(engine.world, s.body); steam.splice(i, 1); }
     }
     strings.forEach((st, k) => {
-      if (t - st.plucked > FX.stringLife) { Composite.remove(engine.world, st.comp); strings.delete(k); }
+      // count swings: the middle body crossing the rest line twice = one full swing
+      const mid = st.bodies[Math.floor(st.bodies.length / 2)];
+      const side = Math.sign(Math.round((mid.position.x - st.x) * 10));
+      if (side && side !== st.side) { if (st.side && st.cross.length < 13) st.cross.push(engine.timing.timestamp / 1000); /* simulation clock */ st.side = side; }
+      if (st.key && st.key.held > 0) st.plucked = Math.max(st.plucked, t - 0.5);
+      if (t - st.plucked > (demoUntil > t ? 9 : FX.stringLife)) { Composite.remove(engine.world, st.comp); strings.delete(k); }
     });
   }
 
@@ -1842,26 +1915,76 @@ CONFIG.fx = {
   }
 
   // ---------- 2. strings ----------
-  function makeString(key, color) {
+  // One string: a column of N small bodies chained by springs, pinned at top and bottom.
+  function buildString(x, top, bottom, stiff, damp) {
     const { Composites, Composite, Bodies, Constraint } = M();
-    const t = (key.midi - CONFIG.keys.lowMidi) / (CONFIG.keys.highMidi - CONFIG.keys.lowMidi);
-    const N = FX.stringSegments;
-    const bottom = key.restY - key.h / 2 - 14 - (key.isBlack ? 0 : 0);
-    const top = bottom - FX.stringLength;
-    const gap = FX.stringLength / (N + 1);
-    const stiff = lerp(FX.stringStiffLow, FX.stringStiffHigh, t);
-    const damp = lerp(FX.stringDampLow, FX.stringDampHigh, t);
-    const comp = Composites.stack(key.x, top + gap, 1, N, 0, gap, (x, y) => Bodies.circle(x, y, 2.5, {
+    const N = FX.stringSegments, gap = (bottom - top) / (N + 1);
+    const comp = Composites.stack(x, top + gap, 1, N, 0, gap, (bx, by) => Bodies.circle(bx, by, 2.5, {
       frictionAir: damp, density: 0.002, collisionFilter: { group: 0, category: 0, mask: 0 }, label: 'string',
     }));
     // springs between neighbours, slightly shorter than the gap so the string is under tension
     Composites.chain(comp, 0, 0, 0, 0, { stiffness: stiff, damping: 0.02, length: gap * 0.92, render: { type: 'line' } });
     const bodies = comp.bodies;
-    Composite.add(comp, Constraint.create({ pointA: { x: key.x, y: top }, bodyB: bodies[0], length: gap * 0.92, stiffness: stiff }));
-    Composite.add(comp, Constraint.create({ pointA: { x: key.x, y: bottom }, bodyB: bodies[N - 1], length: gap * 0.92, stiffness: stiff }));
-    Composite.add(engine.world, comp);
-    return { comp, bodies, color, plucked: 0, top, bottom, x: key.x, amp: 0 };
+    Composite.add(comp, Constraint.create({ pointA: { x, y: top }, bodyB: bodies[0], length: gap * 0.92, stiffness: stiff }));
+    Composite.add(comp, Constraint.create({ pointA: { x, y: bottom }, bodyB: bodies[N - 1], length: gap * 0.92, stiffness: stiff }));
+    return comp;
   }
+  function pluckBodies(bodies, amp) {
+    const { Body } = M(), N = bodies.length;
+    bodies.forEach((b, i) => Body.setVelocity(b, { x: b.velocity.x + amp * Math.sin(Math.PI * (i + 1) / (N + 1)), y: b.velocity.y }));
+  }
+
+  // Matter's springs are not linear, so stiffness is CALIBRATED: a hidden engine measures how fast a
+  // string swings for a given stiffness, and a binary search finds the stiffness whose swing rate is
+  // proportional to the note's frequency (one octave up = exactly twice as fast, while reachable).
+  const DEMO_DAMP = 0.002;
+  function measureRate(stiff) {
+    const { Engine, Composite } = M();
+    const e = Engine.create(); e.gravity.y = 0;
+    if (engine) { e.positionIterations = engine.positionIterations; e.velocityIterations = engine.velocityIterations; e.constraintIterations = engine.constraintIterations; }
+    const comp = buildString(0, 0, FX.stringLength, stiff, DEMO_DAMP);
+    Composite.add(e.world, comp);
+    pluckBodies(comp.bodies, FX.stringPluck * (0.35 + 0.65 * 0.9)); // same strength as a real pluck
+    const mid = comp.bodies[Math.floor(comp.bodies.length / 2)];
+    const dt = 1000 / 60 / CONFIG.physics.substeps;
+    let side = 0; const cross = [];
+    for (let i = 0; i < 60 * CONFIG.physics.substeps * 8 && cross.length < 13; i++) {
+      Engine.update(e, dt);
+      const sd = Math.sign(Math.round(mid.position.x * 10));
+      if (sd && sd !== side) { if (side) cross.push(e.timing.timestamp / 1000); side = sd; }
+    }
+    return cross.length < 3 ? 0 : (cross.length - 1) / 2 / (cross[cross.length - 1] - cross[0]);
+  }
+  const stiffCache = new Map();
+  let baseRate = 0;
+  function stiffFor(midi) {
+    if (stiffCache.has(midi)) return stiffCache.get(midi);
+    const lowK = FX.stringStiffLow || 0.02, maxK = 0.95;
+    if (!baseRate) baseRate = measureRate(lowK);
+    const target = baseRate * Math.pow(2, (midi - CONFIG.keys.lowMidi) / 12);
+    let lo = Math.log(lowK), hi = Math.log(maxK);
+    if (midi <= CONFIG.keys.lowMidi) { stiffCache.set(midi, lowK); return lowK; }
+    if (measureRate(maxK) < target) { stiffCache.set(midi, maxK); return maxK; } // not reachable: fastest possible
+    for (let it = 0; it < 14; it++) {
+      const m = (lo + hi) / 2;
+      if (measureRate(Math.exp(m)) < target) lo = m; else hi = m;
+    }
+    const k = Math.exp((lo + hi) / 2);
+    stiffCache.set(midi, k);
+    return k;
+  }
+
+  function makeString(key, color) {
+    const { Composite } = M();
+    const t = (key.midi - CONFIG.keys.lowMidi) / (CONFIG.keys.highMidi - CONFIG.keys.lowMidi);
+    const bottom = key.restY - key.h / 2 - 14;
+    const top = bottom - FX.stringLength;
+    const damp = demoUntil > now() ? DEMO_DAMP : lerp(FX.stringDampLow, FX.stringDampHigh, t);
+    const comp = buildString(key.x, top, bottom, stiffFor(key.midi), damp);
+    Composite.add(engine.world, comp);
+    return { comp, bodies: comp.bodies, color, plucked: 0, top, bottom, x: key.x, midi: key.midi, key, cross: [], side: 0 };
+  }
+
 
   function pluck(key, color, vel) {
     const { Body, Composite } = M();
@@ -1875,12 +1998,30 @@ CONFIG.fx = {
       st = makeString(key, color);
       strings.set(key.midi, st);
     }
-    st.color = color; st.plucked = now();
+    st.color = color; st.plucked = now(); st.cross = []; st.side = 0;
     const N = st.bodies.length, dir = Math.random() < 0.5 ? -1 : 1;
     st.bodies.forEach((b, i) => {
       const shape = Math.sin(Math.PI * (i + 1) / (N + 1)); // first harmonic: biggest in the middle
       Body.setVelocity(b, { x: b.velocity.x + dir * FX.stringPluck * (0.35 + 0.65 * vel) * shape, y: b.velocity.y });
     });
+  }
+
+  // swings per second measured from the last zero-crossings of the string's middle
+  function swingRate(st) {
+    const c = st.cross;
+    if (c.length < 3) return 0;
+    return (c.length - 1) / 2 / (c[c.length - 1] - c[0]);
+  }
+
+  // Octave experiment: pluck C3 and C4 together and measure how fast each string swings.
+  let demoUntil = 0, demoPair = null;
+  function octaveDemo(low) {
+    if (!ensure()) return;
+    const lo = low || 48, hi = lo + 12;
+    const { Composite } = M();
+    [lo, hi].forEach(m => { const st = strings.get(m); if (st) { Composite.remove(engine.world, st.comp); strings.delete(m); } });
+    demoUntil = now() + 9; demoPair = [lo, hi];
+    GP.Physics.strikeKey(lo, 0.9); GP.Physics.strikeKey(hi, 0.9);
   }
 
   function onNote(n) {
@@ -1924,6 +2065,34 @@ CONFIG.fx = {
       ctx.globalAlpha = 0.6 * a; ctx.fillStyle = st.color;
       ctx.fillRect(st.x - 4, st.top - 1.5, 8, 3); ctx.fillRect(st.x - 4, st.bottom - 1.5, 8, 3);
     });
+    // octave experiment readout
+    if (demoPair && demoUntil > t) {
+      const [lo, hi] = demoPair.map(m => strings.get(m));
+      const fq = m => 440 * Math.pow(2, (m - 69) / 12);
+      const name = m => (GP.Theory && GP.Theory.name ? GP.Theory.name(m) : String(m));
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = Math.min(1, (demoUntil - t) * 2);
+      const x0 = 560, y0 = 214, w = 440, h = 112;
+      ctx.fillStyle = 'rgba(10,13,22,0.82)'; ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(x0, y0, w, h, 14); ctx.fill(); ctx.stroke();
+      ctx.textBaseline = 'middle';
+      ctx.font = '600 15px Inter, sans-serif'; ctx.fillStyle = '#8A94A7'; ctx.textAlign = 'left';
+      ctx.fillText('Octave experiment', x0 + 18, y0 + 22);
+      const row = (st, m, y) => {
+        const r = st ? swingRate(st) : 0;
+        ctx.font = '600 17px Inter, sans-serif'; ctx.fillStyle = GP.noteColor(m); ctx.fillText(name(m), x0 + 18, y);
+        ctx.font = '500 15px "JetBrains Mono", monospace'; ctx.fillStyle = '#E8EDF6';
+        ctx.fillText(fq(m).toFixed(1) + ' Hz', x0 + 70, y);
+        ctx.fillText(r ? r.toFixed(2) + ' swings/s' : 'measuring…', x0 + 190, y);
+        return r;
+      };
+      const rl = row(lo, demoPair[0], y0 + 52), rh = row(hi, demoPair[1], y0 + 80);
+      ctx.textAlign = 'right'; ctx.font = '700 22px "JetBrains Mono", monospace'; ctx.fillStyle = '#F59E0B';
+      ctx.fillText(rl && rh ? (rh / rl).toFixed(2) + '\u00D7' : '', x0 + w - 18, y0 + 66);
+      ctx.font = '500 12px Inter, sans-serif'; ctx.fillStyle = '#8A94A7';
+      ctx.fillText('pitch ratio 2\u00D7', x0 + w - 18, y0 + 22);
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1;
+    }
     // steam: soft sprites that grow and fade as they rise
     for (const s of steam) {
       const age = t - s.born;
@@ -1936,7 +2105,7 @@ CONFIG.fx = {
     ctx.restore();
   }
 
-  GP.FX = { draw, modules: [], get steamCount() { return steam.length; }, get stringCount() { return strings.size; } };
+  GP.FX = { draw, octaveDemo, swingRate, measureRate, stiffFor, get strings() { return strings; }, modules: [], get steamCount() { return steam.length; }, get stringCount() { return strings.size; } };
   GP.on('note', onNote);
 })();
 // ============================================================
@@ -2587,7 +2756,7 @@ CONFIG.fx = {
     // ripples
     for (let i = ripples.length - 1; i >= 0; i--) {
       const rp = ripples[i];
-      const t = (now - rp.t0) / R.rippleSec;
+      const t = Math.max(0, (now - rp.t0) / R.rippleSec);
       if (t >= 1) { ripples.splice(i, 1); continue; }
       const e = easeOut(t);
       c.globalAlpha = (1 - t) * (0.5 + 0.5 * rp.v);
@@ -2620,7 +2789,7 @@ CONFIG.fx = {
     c.textAlign = 'center'; c.textBaseline = 'middle';
     for (let i = labels.length - 1; i >= 0; i--) {
       const L = labels[i];
-      const t = (now - L.t0) / R.labelSec;
+      const t = Math.max(0, (now - L.t0) / R.labelSec);
       if (t >= 1) { labels.splice(i, 1); continue; }
       const y = L.y - 70 * easeOut(t);
       const a = t < 0.12 ? t / 0.12 : 1 - (t - 0.12) / 0.88;
@@ -3168,20 +3337,28 @@ CONFIG.fx = {
     safe('drop', () => GP.Physics.dropBall(midi));
   }
   // Keyboard play: sound now (strike the key), or drop a ball when "Drop ball" is chosen.
-  function playNote(midi) {
+  const heldKeys = {};   // keyboard code -> [handles] while a computer key is held down
+  function releaseCode(code) {
+    const hs = heldKeys[code]; if (!hs) return;
+    delete heldKeys[code];
+    hs.forEach(h => safe('release', () => GP.Physics.releaseKey && GP.Physics.releaseKey(h)));
+  }
+  function playNote(midi, code) {
     if (S.keyMode === 'drop') return dropNote(midi);
     if (!GP.Physics || !GP.Physics.strikeKey) return;
+    const hs = [];
+    if (code) { releaseCode(code); heldKeys[code] = hs; }
     const snapM = m => (T() && T().snap ? T().snap(m) : m);
     if (S.layers.chord && T() && T().chord) {
       const ch = safe('chord', () => T().chord(midi, S.chordQuality));
       if (ch && ch.notes) {
-        ch.notes.filter(m => m >= CONFIG.keys.lowMidi && m <= CONFIG.keys.highMidi).forEach(m => safe('strike', () => GP.Physics.strikeKey(m, 0.75)));
+        ch.notes.filter(m => m >= CONFIG.keys.lowMidi && m <= CONFIG.keys.highMidi).forEach(m => hs.push(safe('strike', () => GP.Physics.strikeKey(m, 0.75, { hold: true }))));
         GP.lastChord = { name: ch.name, notes: ch.noteNames || ch.notes.map(noteName), time: GP.now() };
         GP.emit('chord', { name: ch.name, notes: GP.lastChord.notes, rootMidi: midi });
         return;
       }
     }
-    safe('strike', () => GP.Physics.strikeKey(snapM(midi), 0.8));
+    hs.push(safe('strike', () => GP.Physics.strikeKey(snapM(midi), 0.8, { hold: true })));
   }
 
   // ---------- sidebar ----------
@@ -3256,7 +3433,9 @@ CONFIG.fx = {
       el('div', { class: 'field', style: 'margin-bottom:8px' }, el('div', { class: 'label' }, el('span', { text: 'Keys' })),
         segmented([{ value: 'instant', label: 'Play instantly' }, { value: 'drop', label: 'Drop ball' }],
           () => S.keyMode, v => { S.keyMode = v; toast(v === 'drop' ? 'Keys drop a ball: watch the fall time' : 'Keys play instantly'); syncAll(); }, 'Key mode')),
-      el('div', { class: 'hint', style: 'margin-top:0', html: '<kbd>A</kbd>–<kbd>K</kbd> play · <kbd>Z</kbd>/<kbd>X</kbd> octave · click a key' }));
+      el('div', { class: 'hint', style: 'margin-top:0', html: '<kbd>A</kbd>–<kbd>K</kbd> play · hold to sustain · <kbd>Z</kbd>/<kbd>X</kbd> octave' }),
+      el('div', { class: 'btn-row', style: 'margin-top:8px' },
+        el('button', { type: 'button', class: 'btn', 'aria-label': 'Octave string experiment', html: 'Octave experiment <kbd>O</kbd>', onclick: () => octaveExperiment() })));
     const tempoSlider = slider({ label: 'Tempo', min: CONFIG.tempo.min, max: CONFIG.tempo.max, step: 1, get: () => S.tempo, set: v => { S.tempo = v; }, fmt: v => v + ' BPM' });
     const rainBtns = rainPanel.querySelectorAll('.btn');
     syncers.push(() => {
@@ -3372,6 +3551,12 @@ CONFIG.fx = {
     updateChip();
   }
 
+  function octaveExperiment() {
+    if (!S.started) return;
+    if (S.mode !== 'play') setMode('play');
+    safe('octaveDemo', () => GP.FX && GP.FX.octaveDemo(60));
+    toast('C4 and C5: watch the strings');
+  }
   function buildLesson() {
     const act = (fn, label) => el('button', { type: 'button', class: 'btn', 'aria-label': label, text: label, onclick: () => { if (!S.started) return; fn(); } });
     const poe = (no, title, p, o, e, btns) => el('div', { class: 'poe' },
@@ -3382,9 +3567,9 @@ CONFIG.fx = {
     return el('div', null,
       poe('1', 'Octave = 2× frequency',
         'C4 = 261.6 Hz. What is C5?',
-        'Strike C4, C5, C3. Read Hz.',
-        'Each octave doubles f. Waves align: same note name.',
-        [act(() => { setLayer('spectrum', true); setMode('play'); strikeSeq([60, 72, 48]); }, 'Play C4 → C5 → C3')]),
+        'Pluck C4 and C5 together. Count the swings.',
+        'Each octave doubles f: the C5 string swings 2× as fast.',
+        [act(octaveExperiment, 'String experiment'), act(() => { setLayer('spectrum', true); setMode('play'); strikeSeq([60, 72, 48]); }, 'Play C4 → C5 → C3')]),
       poe('2', 'Pentatonic always works',
         'Will random notes sound musical?',
         'Rain with scale Off, then Pentatonic.',
@@ -3557,10 +3742,11 @@ CONFIG.fx = {
     if (e.repeat) { if (e.code === 'Space') e.preventDefault(); return; }
     if (e.code in NOTE_KEYS) {
       const midi = 60 + 12 * S.octaveShift + NOTE_KEYS[e.code];
-      if (midi >= CONFIG.keys.lowMidi && midi <= CONFIG.keys.highMidi) playNote(midi);
+      if (midi >= CONFIG.keys.lowMidi && midi <= CONFIG.keys.highMidi) playNote(midi, e.code);
       return;
     }
     switch (e.code) {
+      case 'KeyO': octaveExperiment(); break;
       case 'KeyZ': setOctave(S.octaveShift - 1); break;
       case 'KeyX': setOctave(S.octaveShift + 1); break;
       case 'KeyN': case 'KeyI': case 'KeyC': case 'KeyM': setLayer(LAYER_KEYS[e.code], !S.layers[LAYER_KEYS[e.code]]); break;
@@ -3638,6 +3824,8 @@ CONFIG.fx = {
     fillHood();
     bindPointer();
     window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', e => releaseCode(e.code));
+    window.addEventListener('blur', () => Object.keys(heldKeys).forEach(releaseCode));
     window.addEventListener('resize', () => { dirty = true; if ($('layersPop').classList.contains('show')) openPopover(); });
     if (window.ResizeObserver) new ResizeObserver(() => { dirty = true; }).observe(frameEl);
     $('btnStart').addEventListener('click', start);
